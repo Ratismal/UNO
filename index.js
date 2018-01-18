@@ -63,7 +63,12 @@ const commands = {
                 game.discard.push(card);
                 game.player.hand.splice(game.player.hand.indexOf(card), 1);
 
+                switch (card.id) {
+
+                }
+
                 await game.next();
+
                 return `A ${game.flipped} has been played. It is now ${game.player.member.user.username}'s turn!`;
             } else return "Sorry, you can't play that card here!";
 

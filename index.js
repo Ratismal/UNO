@@ -34,7 +34,6 @@ const commands = {
         if (!game) {
             game = games[msg.channel.id] = new Game(msg.channel);
             game.generateDeck();
-            console.log(game.deck.join('\n'), '\n\n', 'Total Cards: ' + game.deck.length);
         }
         if (game.started) {
             return 'Sorry, this game has already started!';
@@ -55,32 +54,42 @@ const commands = {
         if (game) {
             if (!game.started) return "Sorry, but the game hasn't been started yet!";
 
-            if (game.queue[0].id !== msg.author.id) return `It's not your turn yet! It's currently ${game.queue[0].member.user.username}'s turn.`;
+            if (game.player.id !== msg.author.id) return `It's not your turn yet! It's currently ${game.player.member.user.username}'s turn.`;
 
-            let card = game.queue[0].getCard(words);
+            let card = game.player.getCard(words);
             if (!card) return "It doesn't seem like you have that card! Try again.";
 
             if (!card.color || card.id === game.flipped.id || card.color === game.flipped.color) {
                 game.discard.push(card);
-                game.queue[0].hand.splice(game.queue[0].hand.indexOf(card), 1);
+                game.player.hand.splice(game.player.hand.indexOf(card), 1);
 
-                game.queue.push(game.queue.shift());
-                return `A ${game.flipped} has been played. It is now ${game.queue[0].member.user.username}'s turn!`;
+                await game.next();
+                return `A ${game.flipped} has been played. It is now ${game.player.member.user.username}'s turn!`;
             } else return "Sorry, you can't play that card here!";
+
+        } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
+    },
+    async pickup(msg, words) {
+        let game = games[msg.channel.id];
+        if (game) {
+            if (!game.started) return "Sorry, but the game hasn't been started yet!";
+
+            if (game.player.id !== msg.author.id) return `It's not your turn yet! It's currently ${game.player.member.user.username}'s turn.`;
+
+            game.deal(game.player, 1);
+            let player = game.player;
+            await game.next();
+            return `${player.member.user.username} picked up a card.\n\nA ${game.flipped} was played last. It is now ${game.player.member.user.username}'s turn!`;
 
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
     },
     async start(msg, words) {
         let game = games[msg.channel.id];
         if (game.queue.length > 1) {
-            if (game.queue[0].id !== msg.author.id)
+            if (game.player.id !== msg.author.id)
                 return "Sorry, but you can't start a game you didn't create!";
-            game.dealAll(7);
+            await game.dealAll(7);
             game.discard.push(game.deck.pop());
-            for (const player of game.queue) {
-                console.log(player.hand.join(' | '));
-                await player.sendHand();
-            }
             game.started = true;
             return `The game has begun with ${game.queue.length} players! The currently flipped card is: ${game.flipped}`;
         } else {
@@ -102,8 +111,17 @@ class Game {
         this.started = false;
     }
 
+    get player() {
+        return this.queue[0];
+    }
+
     get flipped() {
         return this.discard[this.discard.length - 1];
+    }
+
+    async next() {
+        this.queue.push(this.queue.shift());
+        this.player.sendHand(true);
     }
 
     addPlayer(member) {
@@ -115,16 +133,28 @@ class Game {
         else return null;
     }
 
-    dealAll(number) {
+    async dealAll(number) {
+        let cards = {};
         for (let i = 0; i < number; i++)
             for (const player of this.queue) {
-                player.hand.push(this.deck.pop());
+                let c = this.deck.pop();
+                if (!cards[player.id]) cards[player.id] = [];
+                cards[player.id].push(c.toString());
+                player.hand.push(c);
             }
+        for (const player of this.queue) {
+            await player.send('You were dealt the following card(s):\n' + cards[player.id].map(c => `**${c}**`).join(' | '));
+        }
     }
 
-    deal(player, number) {
-        for (let i = 0; i < number; i++)
-            player.hand.push(this.deck.pop());
+    async deal(player, number) {
+        let cards = [];
+        for (let i = 0; i < number; i++) {
+            let c = this.deck.pop();
+            cards.push(c.toString());
+            player.hand.push(c);
+        }
+        await player.send('You were dealt the following card(s):\n' + cards.map(c => `**${c}**`).join(' | '));
     }
 
     generateDeck() {
@@ -186,10 +216,14 @@ class Player {
             ((color === undefined === c.color) || (c.color.toLowerCase() === color.toLowerCase()[0])));
     }
 
-    async sendHand() {
+    async send(content) {
         let chan = await this.member.user.getDMChannel();
+        await chan.createMessage(content);
+    }
+
+    async sendHand(turn = false) {
         this.sortHand();
-        await chan.createMessage('Here is your hand:\n\n' + this.hand.map(h => `**${h}**`).join(' | ') + `\n\nYou currently have ${this.hand.length} card(s).`);
+        await this.send((turn ? "It's your turn! " : '') + 'Here is your hand:\n\n' + this.hand.map(h => `**${h}**`).join(' | ') + `\n\nYou currently have ${this.hand.length} card(s).`);
     }
 }
 

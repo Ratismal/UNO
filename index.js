@@ -31,14 +31,14 @@ const games = {};
 const commands = {
     async help(msg, words) {
         let out = `:sparkles: **__UNO Commands__** :sparkles:\n
-**UNO HELP** - Shows this message!
-**UNO JOIN** - Joins (or creates) a game in the current channel!
-**UNO START** - Starts the game! Can only be used by the player who joined first.
-**UNO TABLE** - Shows everyone at the table.
-**UNO PLAY <colour> <value>** - Plays a card! Colours and values are interchangeable.
-**UNO PICKUP** - Picks up a card!
-**UNO CALLOUT** - Calls a player out for only having one card left!
-**UNO!** - Let everyone know that you only have one card left!`;
+**${prefix.toUpperCase()} HELP** - Shows this message!
+**${prefix.toUpperCase()} JOIN** - Joins (or creates) a game in the current channel!
+**${prefix.toUpperCase()} START** - Starts the game! Can only be used by the player who joined first.
+**${prefix.toUpperCase()} TABLE** - Shows everyone at the table.
+**${prefix.toUpperCase()} PLAY <colour> <value>** - Plays a card! Colours and values are interchangeable.
+**${prefix.toUpperCase()} PICKUP** - Picks up a card!
+**${prefix.toUpperCase()} CALLOUT** - Calls a player out for only having one card left!
+**${prefix.toUpperCase()}!** - Let everyone know that you only have one card left!`;
 
         return out;
     },

@@ -2,7 +2,7 @@ const config = require('./config.json');
 const Eris = require('eris');
 
 const client = new Eris(config.token, { getAllUsers: true });
-const prefix = 'uno';
+const prefix = config.prefix;
 
 process.on('unhandledRejection', error => {
     // Will print "unhandledRejection err is not defined"

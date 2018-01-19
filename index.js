@@ -15,13 +15,19 @@ client.on('ready', () => {
 
 client.on('messageCreate', async (msg) => {
     if (msg.content.toLowerCase().startsWith(prefix)) {
-        let text = msg.content.substring(prefix.length).trim();
-        let words = text.split(/\s+/);
-        let name = words.shift().toLowerCase();
-        if (commands.hasOwnProperty(name)) {
-            let res = await commands[name](msg, words);
-            if (typeof res === 'string')
-                await msg.channel.createMessage(res);
+        let segments = msg.content.substring(prefix.length).trim().split('&&');
+        if (segments.length > 2) return await msg.channel.createMessage('Sorry, you can only execute up to **two** commands with a single message!');
+        console.log(segments);
+        if (segments[1] && segments[1].toLowerCase().startsWith(prefix))
+            segments[1] = segments[1].substring(prefix.length);
+        for (const text of segments) {
+            let words = text.trim().split(/\s+/);
+            let name = words.shift().toLowerCase();
+            if (commands.hasOwnProperty(name)) {
+                let res = await commands[name](msg, words);
+                if (typeof res === 'string')
+                    await msg.channel.createMessage(res);
+            }
         }
     }
 });
@@ -38,7 +44,9 @@ const commands = {
 **${prefix.toUpperCase()} PLAY <colour> <value>** - Plays a card! Colours and values are interchangeable.
 **${prefix.toUpperCase()} PICKUP** - Picks up a card!
 **${prefix.toUpperCase()} CALLOUT** - Calls a player out for only having one card left!
-**${prefix.toUpperCase()}!** - Let everyone know that you only have one card left!`;
+**${prefix.toUpperCase()}!** - Let everyone know that you only have one card left!
+
+You can execute up to two commands in a single message by separating them with \`&&\`!`;
 
         return out;
     },
@@ -153,7 +161,7 @@ const commands = {
         if (game.queue.length > 1) {
             if (game.player.id !== msg.author.id)
                 return "Sorry, but you can't start a game you didn't create!";
-            await game.dealAll(7);
+            await game.dealAll(1);
             game.discard.push(game.deck.pop());
             game.started = true;
             return `The game has begun with ${game.queue.length} players! The currently flipped card is: **${game.flipped}**. \n\nIt is now ${game.player.member.user.username}'s turn!`;

@@ -77,7 +77,7 @@ You can execute up to two commands in a single message by separating them with \
             game.queue = game.queue.filter(p => p.id !== msg.author.id);
             let out = 'You are no longer participating in the game.\n\n';
 
-            if (1 === game.queue.length) {
+            if (game.started && game.queue.length <== 1) {
                 game.finished.push(game.queue[0]);
                 out += 'The game is now over. Thanks for playing! Here is the scoreboard:\n'
                 for (let i = 0; i < game.finished.length; i++) {

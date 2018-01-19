@@ -155,8 +155,12 @@ You can execute up to two commands in a single message by separating them with \
                 }
 
                 await game.next();
-
-                return `${pref}A **${game.flipped}** has been played. ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`;
+                return {
+                    embed: {
+                        description: `${pref}A **${game.flipped}** has been played. ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
+                        thumbnail: { url: game.flipped.URL }
+                    }
+                };
             } else return "Sorry, you can't play that card here!";
 
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
@@ -171,7 +175,12 @@ You can execute up to two commands in a single message by separating them with \
             game.deal(game.player, 1);
             let player = game.player;
             await game.next();
-            return `${player.member.user.username} picked up a card.\n\nA **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`;
+            return {
+                embed: {
+                    description: `${player.member.user.username} picked up a card.\n\nA **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`,
+                    thumbnail: { url: game.flipped.URL }
+                }
+            };
 
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
     },
@@ -183,7 +192,12 @@ You can execute up to two commands in a single message by separating them with \
             await game.dealAll(1);
             game.discard.push(game.deck.pop());
             game.started = true;
-            return `The game has begun with ${game.queue.length} players! The currently flipped card is: **${game.flipped}**. \n\nIt is now ${game.player.member.user.username}'s turn!`;
+            return {
+                embed: {
+                    description: `The game has begun with ${game.queue.length} players! The currently flipped card is: **${game.flipped}**. \n\nIt is now ${game.player.member.user.username}'s turn!`,
+                    thumbnail: { url: game.flipped.URL }
+                }
+            };
         } else {
             return "There aren't enough people to play!";
         }
@@ -202,7 +216,7 @@ You can execute up to two commands in a single message by separating them with \
             return `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`;
         }
     },
-    async ['!'](msg, words) {
+    async['!'](msg, words) {
         let game = games[msg.channel.id];
         if (game && game.started && game.players[msg.author.id] && game.players[msg.author.id].hand.length === 1) {
             let p = game.players[msg.author.id];
@@ -435,6 +449,10 @@ class Card {
             G: 'Green',
             B: 'Blue'
         }[this.color];
+    }
+
+    get URL() {
+        return `https://raw.githubusercontent.com/Ratismal/UNO/master/cards/${this.color || ''}${this.id}.png`
     }
 
     get value() {

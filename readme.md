@@ -4,4 +4,4 @@ readmes kill. play uno instead. uno saves lives.
 
 ## TODO
 
-- Images
+- idk

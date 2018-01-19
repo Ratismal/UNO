@@ -25,7 +25,7 @@ client.on('messageCreate', async (msg) => {
             let name = words.shift().toLowerCase();
             if (commands.hasOwnProperty(name)) {
                 let res = await commands[name](msg, words);
-                if (typeof res === 'string')
+                if (res)
                     await msg.channel.createMessage(res);
             }
         }

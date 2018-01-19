@@ -23,7 +23,7 @@ client.on('messageCreate', async (msg) => {
             let words = text.trim().split(/\s+/);
             let name = words.shift().toLowerCase();
             if (commands.hasOwnProperty(name)) {
-                let res = await commands[name](msg, words);
+                let res = await commands[name](msg, words, text.trim().substring(name.length));
                 if (res)
                     await msg.channel.createMessage(res);
             }
@@ -203,6 +203,35 @@ You can execute up to two commands in a single message by separating them with \
             };
         } else {
             return "There aren't enough people to play!";
+        }
+    },
+    async invite(msg, words) {
+        return '<https://discordapp.com/oauth2/authorize?client_id=403419413904228352&scope=bot&permissions=0>';
+    },
+    async stats(msg, words) {
+        var memory = process.memoryUsage();
+        return {
+            embed: {
+                fields: [
+                    { name: 'RAM', value: memory.rss / 1024 / 1024 + 'MiB', inline: true },
+                    { name: 'Guilds', value: client.guilds.size, inline: true },
+                    { name: 'Games In Progress', value: Object.keys(games).length, inline: true }
+                ]
+            }
+        }
+    },
+    async eval(msg, words, text) {
+        if (msg.author.id !== '103347843934212096') return 'NOU';
+        let code = `async () => {
+    ${text}
+}`;
+        let func = eval(code);
+        func = func.bind(this);
+        try {
+            let res = await func();
+            return `\`\`\`js\n${res}\n\`\`\``;
+        } catch (err) {
+            return `\`\`\`js\n${err.stack}\n\`\`\``;
         }
     },
     async ping(msg, words) {

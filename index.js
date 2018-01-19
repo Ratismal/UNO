@@ -39,6 +39,7 @@ const commands = {
         let out = `:sparkles: **__UNO Commands__** :sparkles:\n
 **${prefix.toUpperCase()} HELP** - Shows this message!
 **${prefix.toUpperCase()} JOIN** - Joins (or creates) a game in the current channel!
+**${prefix.toUpperCase()} QUIT** - Quits the game! Party pooper.
 **${prefix.toUpperCase()} START** - Starts the game! Can only be used by the player who joined first.
 **${prefix.toUpperCase()} TABLE** - Shows everyone at the table.
 **${prefix.toUpperCase()} PLAY <colour> <value>** - Plays a card! Colours and values are interchangeable.
@@ -69,6 +70,25 @@ You can execute up to two commands in a single message by separating them with \
                 return 'You have joined the game! Please wait for it to start.'
             }
         }
+    },
+    async quit(msg, words) {
+        let game = games[msg.channel.id];
+        if (game && game.players.hasOwnProperty(msg.author.id)) {
+            game.players[msg.author.id] = undefined;
+            game.queue = game.queue.filter(p => p.id !== msg.author.id);
+            let out = 'You are no longer participating in the game.\n\n';
+
+            if (1 === game.queue.length) {
+                game.finished.push(game.queue[0]);
+                out += 'The game is now over. Thanks for playing! Here is the scoreboard:\n'
+                for (let i = 0; i < game.finished.length; i++) {
+                    out += `${i + 1}. **${game.finished[i].member.user.username}**\n`;
+                }
+                games[game.channel.id] = undefined;
+                return out;
+
+            }
+        } else return 'You haven\'t joined!';
     },
     async play(msg, words) {
         let game = games[msg.channel.id];

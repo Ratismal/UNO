@@ -158,7 +158,8 @@ You can execute up to two commands in a single message by separating them with \
                 return {
                     embed: {
                         description: `${pref}A **${game.flipped}** has been played. ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
-                        thumbnail: { url: game.flipped.URL }
+                        thumbnail: { url: game.flipped.URL },
+                        color: game.flipped.colorCode
                     }
                 };
             } else return "Sorry, you can't play that card here!";
@@ -178,7 +179,8 @@ You can execute up to two commands in a single message by separating them with \
             return {
                 embed: {
                     description: `${player.member.user.username} picked up a card.\n\nA **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`,
-                    thumbnail: { url: game.flipped.URL }
+                    thumbnail: { url: game.flipped.URL },
+                    color: game.flipped.colorCode
                 }
             };
 
@@ -195,7 +197,8 @@ You can execute up to two commands in a single message by separating them with \
             return {
                 embed: {
                     description: `The game has begun with ${game.queue.length} players! The currently flipped card is: **${game.flipped}**. \n\nIt is now ${game.player.member.user.username}'s turn!`,
-                    thumbnail: { url: game.flipped.URL }
+                    thumbnail: { url: game.flipped.URL },
+                    color: game.flipped.colorCode
                 }
             };
         } else {
@@ -449,6 +452,15 @@ class Card {
             G: 'Green',
             B: 'Blue'
         }[this.color];
+    }
+
+    get colorCode() {
+        return {
+            R: 0xff5555,
+            Y: 0xffaa00,
+            G: 0x55aa55,
+            B: 0x5555ff
+        }[this.color] || 0x080808
     }
 
     get URL() {

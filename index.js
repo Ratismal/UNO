@@ -1,7 +1,7 @@
 const config = require('./config.json');
 const Eris = require('eris');
 
-const client = new Eris(config.token);
+const client = new Eris(config.token, { getAllUsers: true });
 const prefix = 'uno';
 
 process.on('unhandledRejection', error => {
@@ -29,6 +29,19 @@ client.on('messageCreate', async (msg) => {
 const games = {};
 
 const commands = {
+    async help(msg, words) {
+        let out = `:sparkles: **__UNO Commands__** :sparkles:\n
+**UNO HELP** - Shows this message!
+**UNO JOIN** - Joins (or creates) a game in the current channel!
+**UNO START** - Starts the game! Can only be used by the player who joined first.
+**UNO TABLE** - Shows everyone at the table.
+**UNO PLAY <colour> <value>** - Plays a card! Colours and values are interchangeable.
+**UNO PICKUP** - Picks up a card!
+**UNO CALLOUT** - Calls a player out for only having one card left!
+**UNO!** - Let everyone know that you only have one card left!`;
+
+        return out;
+    },
     async join(msg, words) {
         let game = games[msg.channel.id];
         if (!game) {
@@ -57,19 +70,66 @@ const commands = {
             if (game.player.id !== msg.author.id) return `It's not your turn yet! It's currently ${game.player.member.user.username}'s turn.`;
 
             let card = game.player.getCard(words);
+            if (card === null) return;
             if (!card) return "It doesn't seem like you have that card! Try again.";
 
-            if (!card.color || card.id === game.flipped.id || card.color === game.flipped.color) {
+            if (!game.flipped.color || card.wild || card.id === game.flipped.id || card.color === game.flipped.color) {
                 game.discard.push(card);
                 game.player.hand.splice(game.player.hand.indexOf(card), 1);
+                let pref = '';
+                if (game.player.hand.length === 0) {
+                    game.finished.push(game.player);
+                    game.player.finished = true;
+                    pref = `${game.player.member.user.username} has no more cards! They finished in **Rank #${game.finished.length}**! :tada:\n\n`;
+                    if (2 === game.queue.length) {
+                        game.finished.push(game.queue[1]);
+                        pref += 'The game is now over. Thanks for playing! Here is the scoreboard:\n'
+                        for (let i = 0; i < game.finished.length; i++) {
+                            pref += `${i + 1}. **${game.finished[i].member.user.username}**\n`;
+                        }
+                        games[game.channel.id] = undefined;
+                        return pref;
 
+                    }
+                }
+
+                let extra = '';
                 switch (card.id) {
-
+                    case 'SKIP':
+                        game.queue.push(game.queue.shift());
+                        extra = `Sorry, ${game.player.member.user.username}! Skip a turn! `;
+                        break;
+                    case 'REVERSE':
+                        let player = game.queue.shift();
+                        game.queue.reverse();
+                        game.queue.unshift(player);
+                        extra = `Turns are now in reverse order! `;
+                        break;
+                    case '+2':
+                        let amount = 0;
+                        for (let i = game.discard.length - 1; i >= 0; i--) {
+                            if (game.discard[i].id === '+2')
+                                amount += 2;
+                            else break;
+                        }
+                        game.deal(game.queue[1], amount);
+                        extra = `${game.queue[1].member.user.username} picks up ${amount} cards! Tough break. `;
+                        break;
+                    case 'WILD':
+                        extra = `In case you missed it, the current color is now **${card.colorName}**! `;
+                        break;
+                    case 'WILD+4': {
+                        let player = game.queue.shift();
+                        await game.dealAll(4);
+                        game.queue.unshift(player);
+                        extra = `EVERYBODY PICKS UP 4! The current color is now **${card.colorName}**! `;
+                        break;
+                    }
                 }
 
                 await game.next();
 
-                return `A ${game.flipped} has been played. It is now ${game.player.member.user.username}'s turn!`;
+                return `${pref}A **${game.flipped}** has been played. ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`;
             } else return "Sorry, you can't play that card here!";
 
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
@@ -84,7 +144,7 @@ const commands = {
             game.deal(game.player, 1);
             let player = game.player;
             await game.next();
-            return `${player.member.user.username} picked up a card.\n\nA ${game.flipped} was played last. It is now ${game.player.member.user.username}'s turn!`;
+            return `${player.member.user.username} picked up a card.\n\nA **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`;
 
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
     },
@@ -96,13 +156,48 @@ const commands = {
             await game.dealAll(7);
             game.discard.push(game.deck.pop());
             game.started = true;
-            return `The game has begun with ${game.queue.length} players! The currently flipped card is: ${game.flipped}`;
+            return `The game has begun with ${game.queue.length} players! The currently flipped card is: **${game.flipped}**. \n\nIt is now ${game.player.member.user.username}'s turn!`;
         } else {
             return "There aren't enough people to play!";
         }
     },
     async ping(msg, words) {
         return 'Pong!';
+    },
+    async table(msg, words) {
+        let game = games[msg.channel.id];
+        if (!game) {
+            return 'There is no game created for this channel yet.';
+        } else if (!game.started) {
+            return `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}**`).join('\n')}`;
+
+        } else {
+            return `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`;
+        }
+    },
+    async ['!'](msg, words) {
+        let game = games[msg.channel.id];
+        if (game && game.started && game.players[msg.author.id] && game.players[msg.author.id].hand.length === 1) {
+            let p = game.players[msg.author.id];
+            if (!p.called) {
+                p.called = true;
+                return `**UNO!!** ${p.member.user.username} only has one card left!`;
+            } else return `You've already said UNO!`;
+        }
+    },
+    async callout(msg, words) {
+        let game = games[msg.channel.id];
+        if (game && game.started && game.players[msg.author.id]) {
+            let baddies = [];
+            for (const player of game.queue) {
+                if (/*player !== game.player &&*/ player.hand.length === 1 && !player.called)
+                    baddies.push(player);
+            }
+            game.dealAll(2, baddies);
+            return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up 2!`;
+        } else {
+            return 'Everybody has more than one card.';
+        }
     }
 };
 
@@ -113,6 +208,7 @@ class Game {
         this.queue = [];
         this.deck = [];
         this.discard = [];
+        this.finished = [];
         this.started = false;
     }
 
@@ -125,41 +221,59 @@ class Game {
     }
 
     async next() {
-        this.queue.push(this.queue.shift());
+        let p = this.queue.shift();
+        if (!p.finished)
+            this.queue.push(p);
         this.player.sendHand(true);
+    }
+
+    async send(content) {
+        await client.createMessage(this.channel.id, content);
     }
 
     addPlayer(member) {
         if (!this.players[member.id]) {
-            let player = this.players[member.id] = new Player(member);
+            let player = this.players[member.id] = new Player(member, this);
             this.queue.push(player);
             return player;
         }
         else return null;
     }
 
-    async dealAll(number) {
+    async dealAll(number, players = this.queue) {
         let cards = {};
         for (let i = 0; i < number; i++)
-            for (const player of this.queue) {
+            for (const player of players) {
+                if (this.deck.length === 0) {
+                    if (this.discard.length === 1) break;
+                    this.shuffleDeck();
+                }
                 let c = this.deck.pop();
                 if (!cards[player.id]) cards[player.id] = [];
                 cards[player.id].push(c.toString());
                 player.hand.push(c);
             }
-        for (const player of this.queue) {
-            await player.send('You were dealt the following card(s):\n' + cards[player.id].map(c => `**${c}**`).join(' | '));
+        for (const player of players) {
+            player.called = false;
+            if (cards[player.id].length > 0)
+                await player.send('You were dealt the following card(s):\n' + cards[player.id].map(c => `**${c}**`).join(' | '));
         }
     }
 
     async deal(player, number) {
         let cards = [];
         for (let i = 0; i < number; i++) {
+            if (this.deck.length === 0) {
+                if (this.discard.length === 1) break;
+                this.shuffleDeck();
+            }
             let c = this.deck.pop();
             cards.push(c.toString());
             player.hand.push(c);
         }
-        await player.send('You were dealt the following card(s):\n' + cards.map(c => `**${c}**`).join(' | '));
+        player.called = false;
+        if (cards.length > 0)
+            await player.send('You were dealt the following card(s):\n' + cards.map(c => `**${c}**`).join(' | '));
     }
 
     generateDeck() {
@@ -192,20 +306,49 @@ class Game {
             a[j] = x;
         }
         this.deck = a;
+        this.send('*Thfwwp!* The deck has been shuffled.');
     }
 }
 
 class Player {
-    constructor(member) {
+    constructor(member, game) {
         this.member = member;
+        this.game = game;
         this.id = member.id;
         this.hand = [];
+        this.called = false;
+        this.finished = false;
     }
 
     sortHand() {
         this.hand.sort((a, b) => {
             return a.value > b.value;
         });
+    }
+
+    parseColor(color) {
+        switch ((color || '').toLowerCase()) {
+            case 'red':
+            case 'r':
+                color = 'R';
+                break;
+            case 'yellow':
+            case 'y':
+                color = 'Y';
+                break;
+            case 'green':
+            case 'g':
+                color = 'G';
+                break;
+            case 'blue':
+            case 'b':
+                color = 'B';
+                break;
+            default:
+                color = '';
+                break;
+        }
+        return color;
     }
 
     getCard(words) {
@@ -216,9 +359,27 @@ class Player {
             color = words[0];
             id = words[1];
         }
+        let _color = this.parseColor(color);
+        if (!_color) {
+            let temp = color;
+            color = id;
+            id = temp;
+            _color = this.parseColor(color);
+            if (!_color) {
+                this.game.send('You have to specify a valid color! Colors are **red**, **yellow**, **green**, and **blue**.\n`uno play <color> <value>`');
+                return null;
+            }
+        }
+        color = _color;
         console.log(color, id);
-        return this.hand.find(c => c.id.toLowerCase() === id.toLowerCase() &&
-            ((color === undefined === c.color) || (c.color.toLowerCase() === color.toLowerCase()[0])));
+        if (['WILD', 'WILD+4'].includes(id.toUpperCase())) {
+            let card = this.hand.find(c => c.id === id.toUpperCase());
+            card.color = color;
+            return card;
+        } else {
+
+            return this.hand.find(c => c.id === id.toUpperCase() && c.color === color);
+        }
     }
 
     async send(content) {
@@ -235,7 +396,9 @@ class Player {
 class Card {
     constructor(id, color) {
         this.id = id;
+        this.wild = false;
         this.color = color;
+        if (!this.color) this.wild = true;
     }
 
     get colorName() {

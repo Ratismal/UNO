@@ -14,7 +14,7 @@ client.on('ready', () => {
 });
 
 client.on('messageCreate', async (msg) => {
-    if (msg.content.toLowerCase().startsWith(pref   ix)) {
+    if (msg.content.toLowerCase().startsWith(prefix)) {
         let segments = msg.content.substring(prefix.length).trim().split('&&');
         if (segments.length > 2) return await msg.channel.createMessage('Sorry, you can only execute up to **two** commands with a single message!');
         if (segments[1] && segments[1].toLowerCase().startsWith(prefix))

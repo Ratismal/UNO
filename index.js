@@ -343,9 +343,8 @@ class Game {
     }
 
     async next() {
-        let p = this.queue.shift();
-        if (!p.finished)
-            this.queue.push(p);
+        this.queue.push(this.queue.shift());
+        this.queue = this.queue.filter(p => !p.finished);
         this.player.sendHand(true);
     }
 

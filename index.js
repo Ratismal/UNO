@@ -136,15 +136,17 @@ You can execute up to two commands in a single message by separating them with \
 
                 let extra = '';
                 switch (card.id) {
+                    case 'REVERSE':
+                        if (game.queue.length >= 2) {
+                            let player = game.queue.shift();
+                            game.queue.reverse();
+                            game.queue.unshift(player);
+                            extra = `Turns are now in reverse order! `;
+                            break;
+                        }
                     case 'SKIP':
                         game.queue.push(game.queue.shift());
                         extra = `Sorry, ${game.player.member.user.username}! Skip a turn! `;
-                        break;
-                    case 'REVERSE':
-                        let player = game.queue.shift();
-                        game.queue.reverse();
-                        game.queue.unshift(player);
-                        extra = `Turns are now in reverse order! `;
                         break;
                     case '+2':
                         let amount = 0;
@@ -321,6 +323,11 @@ class Game {
                 desc: 'How many cards to pick up at the beginning.',
                 value: 7,
                 name: 'Initial Cards'
+            },
+            mustPlay: {
+                desc: 'Whether someone must play a card if they are able to.',
+                value: false,
+                name: 'Must Play'
             }
         }
     }

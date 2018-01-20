@@ -324,7 +324,7 @@ class Game {
             },
             initialCards: {
                 desc: 'How many cards to pick up at the beginning.',
-                value: 7,
+                value: 53,
                 name: 'Initial Cards'
             },
             mustPlay: {
@@ -428,6 +428,8 @@ class Game {
             a[j] = x;
         }
         this.deck = a;
+        for (const card of this.deck.filter(c => c.wild))
+            card.color = undefined;
         this.send('*Thfwwp!* The deck has been shuffled.');
     }
 }

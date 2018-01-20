@@ -83,7 +83,7 @@ You can execute up to two commands in a single message by separating them with \
                 for (let i = 0; i < game.finished.length; i++) {
                     out += `${i + 1}. **${game.finished[i].member.user.username}**\n`;
                 }
-                games[game.channel.id] = undefined;
+                delete games[game.channel.id];
                 return out;
             }
             if (game.started && game.player.member.id === msg.author.id) {
@@ -96,7 +96,7 @@ You can execute up to two commands in a single message by separating them with \
                     }
                 };
             }
-            game.players[msg.author.id] = undefined;
+            delete game.players[msg.author.id];
             game.queue = game.queue.filter(p => p.id !== msg.author.id);
             return out;
         } else return 'You haven\'t joined!';
@@ -129,7 +129,7 @@ You can execute up to two commands in a single message by separating them with \
                         for (let i = 0; i < game.finished.length; i++) {
                             pref += `${i + 1}. **${game.finished[i].member.user.username}**\n`;
                         }
-                        games[game.channel.id] = undefined;
+                        delete games[game.channel.id];
                         return pref;
 
                     }

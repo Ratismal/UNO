@@ -89,7 +89,7 @@ You can execute up to two commands in a single message by separating them with \
                 game.next();
                 out = {
                     embed: {
-                        description: `${out}A **${game.flipped}** was played last. ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
+                        description: `${out}A **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`,
                         thumbnail: { url: game.flipped.URL },
                         color: game.flipped.colorCode
                     }

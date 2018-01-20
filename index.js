@@ -85,7 +85,7 @@ You can execute up to two commands in a single message by separating them with \
                 games[game.channel.id] = undefined;
                 return out;
             }
-            if (game.started) {
+            if (game.started && game.player.member.id === msg.author.id) {
                 game.next();
                 out = {
                     embed: {

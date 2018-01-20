@@ -73,11 +73,10 @@ You can execute up to two commands in a single message by separating them with \
     async quit(msg, words) {
         let game = games[msg.channel.id];
         if (game && game.players.hasOwnProperty(msg.author.id)) {
-            game.players[msg.author.id] = undefined;
-            game.queue = game.queue.filter(p => p.id !== msg.author.id);
+
             let out = 'You are no longer participating in the game.\n\n';
 
-            if (game.started && game.queue.length <= 1) {
+            if (game.started && game.queue.length <= 2) {
                 game.finished.push(game.queue[0]);
                 out += 'The game is now over. Thanks for playing! Here is the scoreboard:\n'
                 for (let i = 0; i < game.finished.length; i++) {
@@ -85,10 +84,25 @@ You can execute up to two commands in a single message by separating them with \
                 }
                 games[game.channel.id] = undefined;
                 return out;
-
             }
+            if (game.started) {
+                game.next();
+                out = {
+                    embed: {
+                        description: `${out}${pref}A **${game.flipped}** was played last. ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
+                        thumbnail: { url: game.flipped.URL },
+                        color: game.flipped.colorCode
+                    }
+                };
+            }
+            game.players[msg.author.id] = undefined;
+            game.queue = game.queue.filter(p => p.id !== msg.author.id);
+            return out;
         } else return 'You haven\'t joined!';
     },
+    async p(msg, words) { return await commands.play(msg, words); },
+    async pl(msg, words) { return await commands.play(msg, words); },
+    async ply(msg, words) { return await commands.play(msg, words); },
     async play(msg, words) {
         let game = games[msg.channel.id];
         if (game) {
@@ -141,15 +155,23 @@ You can execute up to two commands in a single message by separating them with \
                         }
                         game.deal(game.queue[1], amount);
                         extra = `${game.queue[1].member.user.username} picks up ${amount} cards! Tough break. `;
+                        if (game.rules.drawSkip.value === true) {
+                            extra += ' Also, skip a turn!';
+                            game.queue.push(game.queue.shift());
+                        }
                         break;
                     case 'WILD':
                         extra = `In case you missed it, the current color is now **${card.colorName}**! `;
                         break;
                     case 'WILD+4': {
-                        let player = game.queue.shift();
-                        await game.dealAll(4);
-                        game.queue.unshift(player);
-                        extra = `EVERYBODY PICKS UP 4! The current color is now **${card.colorName}**! `;
+                        // let player = game.queue.shift();
+                        await game.deal(game.queue[1], 4);
+                        // game.queue.unshift(player);
+                        extra = `${game.queue[1].member.user.username} picks up 4! The current color is now **${card.colorName}**! `;
+                        if (game.rules.drawSkip.value === true) {
+                            extra += ' Also, skip a turn!';
+                            game.queue.push(game.queue.shift());
+                        }
                         break;
                     }
                 }
@@ -166,6 +188,8 @@ You can execute up to two commands in a single message by separating them with \
 
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
     },
+    async d(msg, words) { return await commands.pickup(msg, words); },
+    async draw(msg, words) { return await commands.pickup(msg, words); },
     async pickup(msg, words) {
         let game = games[msg.channel.id];
         if (game) {
@@ -191,7 +215,7 @@ You can execute up to two commands in a single message by separating them with \
         if (game.queue.length > 1) {
             if (game.player.id !== msg.author.id)
                 return "Sorry, but you can't start a game you didn't create!";
-            await game.dealAll(7);
+            await game.dealAll(game.rules.initialCards.value);
             game.discard.push(game.deck.pop());
             game.started = true;
             return {
@@ -283,6 +307,19 @@ class Game {
         this.discard = [];
         this.finished = [];
         this.started = false;
+        this.confirm = false;
+        this.rules = {
+            drawSkip: {
+                desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
+                value: true,
+                name: 'Draws Skip'
+            },
+            initialCards: {
+                desc: 'How many cards to pick up at the beginning.',
+                value: 7,
+                name: 'Initial Cards'
+            }
+        }
     }
 
     get player() {
@@ -447,6 +484,7 @@ class Player {
         console.log(color, id);
         if (['WILD', 'WILD+4'].includes(id.toUpperCase())) {
             let card = this.hand.find(c => c.id === id.toUpperCase());
+            if (!card) return undefined;
             card.color = color;
             return card;
         } else {

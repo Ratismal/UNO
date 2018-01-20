@@ -4,4 +4,5 @@ readmes kill. play uno instead. uno saves lives.
 
 ## TODO
 
-- idk
+- Configurable rules
+- AIs

@@ -289,8 +289,10 @@ You can execute up to two commands in a single message by separating them with \
         if (game && game.started && game.players[msg.author.id]) {
             let baddies = [];
             for (const player of game.queue) {
-                if (/*player !== game.player &&*/ player.hand.length === 1 && !player.called)
+                if (/*player !== game.player &&*/ player.hand.length === 1 && !player.called) {
                     baddies.push(player);
+                    player.called = true;
+                }
             }
             game.dealAll(2, baddies);
             console.log(baddies);

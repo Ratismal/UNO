@@ -294,7 +294,7 @@ You can execute up to two commands in a single message by separating them with \
             console.log(baddies);
             if (baddies.length > 0)
                 return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up 2!`;
-            else 'There is nobody to call out.'
+            else return 'There is nobody to call out.'
         } else {
             return 'You aren\'t even in the game!';
         }

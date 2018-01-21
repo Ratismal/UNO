@@ -324,7 +324,7 @@ class Game {
             },
             initialCards: {
                 desc: 'How many cards to pick up at the beginning.',
-                value: 53,
+                value: 7,
                 name: 'Initial Cards'
             },
             mustPlay: {

@@ -33,6 +33,32 @@ client.on('messageCreate', async (msg) => {
 
 const games = {};
 
+const timeoutTimer = setInterval(async () => {
+    for (const id in games) {
+        let game = games[id];
+        if (!game.started && Date.now() - game.lastChange >= 3 * 60 * 1000) {
+            await game.send(`The game has been cancelled due to inactivity.`);
+            delete games[id];
+        } else if (game.started && Date.now() - game.lastChange >= 5 * 60 * 1000) {
+            let user = game.queue[0].member.user;
+            let msg = { author: user, channel: { id } };
+            let out = await commands.quit(msg, []);
+            if (typeof out === 'string') {
+                out = out.split('\n');
+                out[0] = `**${user.username}#${user.discriminator}** has been kicked from the game due to inactivity.`;
+                out = out.join('\n');
+            } else {
+                let desc = out.embed.description;
+                desc = desc.split('\n');
+                desc[0] = `**${user.username}#${user.discriminator}** has been kicked from the game due to inactivity.`;
+                desc = desc.join('\n');
+                out.embed.description = desc;
+            }
+            await game.send(out);
+        }
+    }
+}, 1000 * 30);
+
 const commands = {
     async help(msg, words) {
         let out = `:sparkles: **__UNO Commands__** :sparkles:\n
@@ -275,7 +301,7 @@ You can execute up to two commands in a single message by separating them with \
             return `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`;
         }
     },
-    async['!'](msg, words) {
+    async ['!'](msg, words) {
         let game = games[msg.channel.id];
         if (game && game.started && game.players[msg.author.id] && game.players[msg.author.id].hand.length === 1) {
             let p = game.players[msg.author.id];
@@ -316,6 +342,7 @@ class Game {
         this.finished = [];
         this.started = false;
         this.confirm = false;
+        this.lastChange = Date.now();
         this.rules = {
             drawSkip: {
                 desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
@@ -347,6 +374,7 @@ class Game {
         this.queue.push(this.queue.shift());
         this.queue = this.queue.filter(p => !p.finished);
         this.player.sendHand(true);
+        this.lastChange = Date.now();
     }
 
     async send(content) {
@@ -354,6 +382,7 @@ class Game {
     }
 
     addPlayer(member) {
+        this.lastChange = Date.now();
         if (!this.players[member.id]) {
             let player = this.players[member.id] = new Player(member, this);
             this.queue.push(player);

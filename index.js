@@ -1,7 +1,7 @@
 const config = require('./config.json');
 const Eris = require('eris');
 
-const client = new Eris(config.token, { getAllUsers: true });
+const client = new Eris(config.token, { getAllUsers: true, maxShards: 2 });
 const prefix = config.prefix;
 
 process.on('unhandledRejection', error => {
@@ -21,9 +21,9 @@ client.on('warn', msg => {
     console.error(msg);
 });
 
-client.on('debug', msg => {
-    console.log(msg);
-});
+// client.on('debug', msg => {
+//     console.log(msg);
+// });
 
 client.on('connect', id => {
     console.log('Shard', id, 'has connected');

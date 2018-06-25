@@ -17,6 +17,18 @@ client.on('error', err => {
     console.error(err);
 });
 
+client.on('warn', msg => {
+    console.error(msg);
+});
+
+client.on('debug', msg => {
+    console.log(msg);
+});
+
+client.on('connect', id => {
+    console.log('Shard', id, 'has connected');
+});
+
 client.on('messageCreate', async (msg) => {
     if (msg.content.toLowerCase().startsWith(prefix)) {
         let segments = msg.content.substring(prefix.length).trim().split('&&');

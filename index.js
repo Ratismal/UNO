@@ -92,7 +92,7 @@ You can execute up to two commands in a single message by separating them with \
             if (game.queue.length === 1) {
                 return 'A game has been registered! Once all players have joined, type `uno start` to begin the game!';
             } else {
-                return 'You have joined the game! Please wait for it to start.'
+                return 'You have joined the game! Please wait for it to start.';
             }
         }
     },
@@ -105,7 +105,7 @@ You can execute up to two commands in a single message by separating them with \
             if (game.started && game.queue.length <= 2) {
                 game.queue = game.queue.filter(p => p.id !== msg.author.id);
                 game.finished.push(game.queue[0]);
-                out += 'The game is now over. Thanks for playing! Here is the scoreboard:\n'
+                out += 'The game is now over. Thanks for playing! Here is the scoreboard:\n';
                 for (let i = 0; i < game.finished.length; i++) {
                     out += `${i + 1}. **${game.finished[i].member.user.username}**\n`;
                 }
@@ -151,7 +151,7 @@ You can execute up to two commands in a single message by separating them with \
                     pref = `${game.player.member.user.username} has no more cards! They finished in **Rank #${game.finished.length}**! :tada:\n\n`;
                     if (2 === game.queue.length) {
                         game.finished.push(game.queue[1]);
-                        pref += 'The game is now over. Thanks for playing! Here is the scoreboard:\n'
+                        pref += 'The game is now over. Thanks for playing! Here is the scoreboard:\n';
                         for (let i = 0; i < game.finished.length; i++) {
                             pref += `${i + 1}. **${game.finished[i].member.user.username}**\n`;
                         }
@@ -271,7 +271,7 @@ You can execute up to two commands in a single message by separating them with \
                     { name: 'Games In Progress', value: Object.keys(games).length, inline: true }
                 ]
             }
-        }
+        };
     },
     async eval(msg, words, text) {
         if (msg.author.id !== '103347843934212096') return 'NOU';
@@ -325,7 +325,7 @@ You can execute up to two commands in a single message by separating them with \
             console.log(baddies);
             if (baddies.length > 0)
                 return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up 2!`;
-            else return 'There is nobody to call out.'
+            else return 'There is nobody to call out.';
         } else {
             return 'You aren\'t even in the game!';
         }
@@ -359,7 +359,7 @@ class Game {
                 value: false,
                 name: 'Must Play'
             }
-        }
+        };
     }
 
     get player() {
@@ -441,8 +441,8 @@ class Game {
                 this.deck.push(new Card('+2', color));
         }
         for (let i = 0; i < 4; i++) {
-            this.deck.push(new Card('WILD'))
-            this.deck.push(new Card('WILD+4'))
+            this.deck.push(new Card('WILD'));
+            this.deck.push(new Card('WILD+4'));
         }
 
         this.shuffleDeck();
@@ -570,11 +570,11 @@ class Card {
             Y: 0xffaa00,
             G: 0x55aa55,
             B: 0x5555ff
-        }[this.color] || 0x080808
+        }[this.color] || 0x080808;
     }
 
     get URL() {
-        return `https://raw.githubusercontent.com/Ratismal/UNO/master/cards/${this.color || ''}${this.id}.png`
+        return `https://raw.githubusercontent.com/Ratismal/UNO/master/cards/${this.color || ''}${this.id}.png`;
     }
 
     get value() {
@@ -604,4 +604,5 @@ class Card {
     }
 }
 
+console.log('Connecting...');
 client.connect();

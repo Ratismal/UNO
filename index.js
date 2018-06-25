@@ -13,6 +13,10 @@ client.on('ready', () => {
     console.log('ready!');
 });
 
+client.on('error', err => {
+    console.error(err);
+});
+
 client.on('messageCreate', async (msg) => {
     if (msg.content.toLowerCase().startsWith(prefix)) {
         let segments = msg.content.substring(prefix.length).trim().split('&&');

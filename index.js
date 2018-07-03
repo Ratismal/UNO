@@ -1,4 +1,6 @@
 const config = require('./config.json');
+const CatLoggr = require('cat-loggr');
+const loggr = new CatLoggr().setGlobal();
 const Eris = require('eris');
 
 const client = new Eris(config.token, { getAllUsers: true, maxShards: 2 });
@@ -29,6 +31,19 @@ client.on('connect', id => {
     console.log('Shard', id, 'has connected');
 });
 
+client.on('shardPreReady', id => {
+    console.log('Shard', id, 'is pre-ready');
+});
+client.on('shardReady', id => {
+    console.log('Shard', id, 'is ready');
+});
+client.on('shardResume', id => {
+    console.log('Shard', id, 'resumed');
+});
+client.on('shardDisconnect', (err, id) => {
+    console.warn('Shard', id, 'disconnected', err || '');
+});
+
 client.on('messageCreate', async (msg) => {
     if (msg.content.toLowerCase().startsWith(prefix)) {
         let segments = msg.content.substring(prefix.length).trim().split('&&');
@@ -52,10 +67,10 @@ const games = {};
 const timeoutTimer = setInterval(async () => {
     for (const id in games) {
         let game = games[id];
-        if (!game.started && Date.now() - game.lastChange >= 3 * 60 * 1000) {
+        if (!game.started && (Date.now() - game.lastChange) >= 3 * 60 * 1000) {
             await game.send(`The game has been cancelled due to inactivity.`);
             delete games[id];
-        } else if (game.started && Date.now() - game.lastChange >= 5 * 60 * 1000) {
+        } else if (game.started && (Date.now() - game.lastChange) >= 5 * 60 * 1000) {
             let user = game.queue[0].member.user;
             let msg = { author: user, channel: { id } };
             let out = await commands.quit(msg, []);

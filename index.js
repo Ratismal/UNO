@@ -3,7 +3,7 @@ const CatLoggr = require('cat-loggr');
 const loggr = new CatLoggr().setGlobal();
 const Eris = require('eris');
 
-const client = new Eris(config.token, { getAllUsers: true, maxShards: 2 });
+const client = new Eris(config.token, { getAllUsers: true, maxShards: 6 });
 const prefix = config.prefix;
 
 process.on('unhandledRejection', error => {

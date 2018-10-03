@@ -270,6 +270,16 @@ You can execute up to two commands in a single message by separating them with \
 
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
     },
+    async hand(msg, words) {
+        let game = games[msg.channel.id];
+        if (game) {
+            if (!game.started) return "Sorry, but the game hasn't been started yet!";
+
+            let player = game.players[msg.author.id];
+            await player.sendHand();
+            return 'You got it! I\'ve DMed you your hand.';
+        } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
+    },
     async start(msg, words) {
         let game = games[msg.channel.id];
         if (!game)
@@ -425,6 +435,14 @@ class Game {
         else return null;
     }
 
+    async notifyPlayer(player, cards = player.hand) {
+        try {
+            await player.send('You were dealt the following card(s):\n' + cards.map(c => `**${c}**`).join(' | '));
+        } catch (err) {
+            await this.send(`Hey <@${player.id}>, I can't DM you! Please make sure your DMs are enabled, and run \`uno hand\` to see your cards.`);
+        }
+    }
+
     async dealAll(number, players = this.queue) {
         let cards = {};
         for (let i = 0; i < number; i++)
@@ -441,7 +459,8 @@ class Game {
         for (const player of players) {
             player.called = false;
             if (cards[player.id].length > 0)
-                await player.send('You were dealt the following card(s):\n' + cards[player.id].map(c => `**${c}**`).join(' | '));
+                await this.notifyPlayer(player, cards[player.id]);
+
         }
     }
 
@@ -458,7 +477,7 @@ class Game {
         }
         player.called = false;
         if (cards.length > 0)
-            await player.send('You were dealt the following card(s):\n' + cards.map(c => `**${c}**`).join(' | '));
+            await this.notifyPlayer(player, cards);
     }
 
     generateDeck() {
@@ -577,7 +596,11 @@ class Player {
 
     async sendHand(turn = false) {
         this.sortHand();
-        await this.send((turn ? "It's your turn! " : '') + 'Here is your hand:\n\n' + this.hand.map(h => `**${h}**`).join(' | ') + `\n\nYou currently have ${this.hand.length} card(s).`);
+        try {
+            await this.send((turn ? "It's your turn! " : '') + 'Here is your hand:\n\n' + this.hand.map(h => `**${h}**`).join(' | ') + `\n\nYou currently have ${this.hand.length} card(s).`);
+        } catch (err) {
+            await this.game.send(`Hey <@${this.id}>, I can't DM you! Please make sure your DMs are enabled, and run \`uno hand\` to see your cards.`);
+        }
     }
 }
 

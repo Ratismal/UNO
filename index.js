@@ -3,6 +3,7 @@ const CatLoggr = require('cat-loggr');
 const loggr = new CatLoggr().setGlobal();
 const Eris = require('eris');
 const fs = require('fs'), path = require('path');
+const moment = require('moment');
 const { Game, Player, Card } = require('./Structures');
 
 let conf = {
@@ -325,6 +326,7 @@ You can execute up to two commands in a single message by separating them with \
             await game.dealAll(game.rules.initialCards.value);
             game.discard.push(game.deck.pop());
             game.started = true;
+            game.timeStarted = Date.now();
             return {
                 embed: {
                     description: `The game has begun with ${game.queue.length} players! The currently flipped card is: **${game.flipped}**. \n\nIt is now ${game.player.member.user.username}'s turn!`,
@@ -375,17 +377,28 @@ You can execute up to two commands in a single message by separating them with \
         } else if (!game.started) {
             return `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}**`).join('\n')}`;
         } else {
+            console.log(moment() - game.timeStarted);
+            let diff = moment.duration(moment() - game.timeStarted);
+            let d = [];
+            if (diff.days() > 0) d.push(`${diff.days()} day${diff.days() === 1 ? '' : 's'}`);
+            if (diff.hours() > 0) d.push(`${diff.hours()} hour${diff.hours() === 1 ? '' : 's'}`);
+            if (diff.minutes() > 0) d.push(`${diff.minutes()} minute${diff.minutes() === 1 ? '' : 's'}`);
+            if (d.length > 1) {
+                d[d.length - 1] = 'and ' + d[d.length - 1];
+            }
+            d = d.join(', ');
             return {
-                content: `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`,
+                content: `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`
+                    + `\n\nThis game has lasted **${d}**. **${game.drawn}** cards have been drawn!\n\n`,
                 embed: {
-                    description: `A **${game.flipped}** has been played.\n\nIt is currently ${game.player.member.user.username}'s turn!`,
+                    description: `A ** ${game.flipped}** has been played.\n\nIt is currently ${game.player.member.user.username} 's turn!`,
                     thumbnail: { url: game.flipped.URL },
                     color: game.flipped.colorCode
                 }
             };
         }
     },
-    async ['!'](msg, words) {
+    async['!'](msg, words) {
         let game = games[msg.channel.id];
         if (game && game.started && game.players[msg.author.id] && game.players[msg.author.id].hand.length === 1) {
             let p = game.players[msg.author.id];

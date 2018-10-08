@@ -13,6 +13,8 @@ module.exports = class Game {
         this.started = false;
         this.confirm = false;
         this.lastChange = Date.now();
+        this.drawn = 0;
+        this.timeStarted = null;
         this.rules = {
             drawSkip: {
                 desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
@@ -46,7 +48,8 @@ module.exports = class Game {
         game.confirm = obj.confirm;
         game.lastChange = Date.now(); // set to current date to account for potential downtime
         game.rules = obj.rules;
-
+        game.timeStarted = obj.timeStarted || (obj.started ? Date.now() : null);
+        game.drawn = obj.drawn || 0;
         return game;
     }
 
@@ -61,7 +64,9 @@ module.exports = class Game {
             started: this.started,
             confirm: this.confirm,
             lastChange: Date.now(),
-            rules: this.rules
+            rules: this.rules,
+            timeStarted: this.timeStarted,
+            drawn: this.drawn
         };
         for (const id in this.players) {
             obj.players[id] = this.players[id].serialize();
@@ -119,6 +124,7 @@ module.exports = class Game {
                 if (!cards[player.id]) cards[player.id] = [];
                 cards[player.id].push(c.toString());
                 player.hand.push(c);
+                this.drawn++;
             }
         for (const player of players) {
             player.called = false;
@@ -138,6 +144,7 @@ module.exports = class Game {
             let c = this.deck.pop();
             cards.push(c.toString());
             player.hand.push(c);
+            this.drawn++;
         }
         player.called = false;
         if (cards.length > 0)

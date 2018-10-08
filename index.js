@@ -374,9 +374,15 @@ You can execute up to two commands in a single message by separating them with \
             return 'There is no game created for this channel yet.';
         } else if (!game.started) {
             return `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}**`).join('\n')}`;
-
         } else {
-            return `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`;
+            return {
+                content: `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`,
+                embed: {
+                    description: `A **${game.flipped}** has been played.\n\nIt is currently ${game.player.member.user.username}'s turn!`,
+                    thumbnail: { url: game.flipped.URL },
+                    color: game.flipped.colorCode
+                }
+            };
         }
     },
     async ['!'](msg, words) {

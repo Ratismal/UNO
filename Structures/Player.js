@@ -65,7 +65,13 @@ module.exports = class Player {
     getCard(words) {
         let color, id;
         if (words.length === 1) {
-            id = words[0];
+            let f = words[0][0].toLowerCase();
+            let _c = this.parseColor(f);
+            if (_c) {
+                color = _c;
+                id = words[0].substring(1);
+            } else
+                id = words[0];
         } else {
             color = words[0];
             id = words[1];
@@ -83,13 +89,14 @@ module.exports = class Player {
         }
         color = _color;
         console.log(color, id);
+        let alias = { 'W': 'WILD', 'W+4': 'WILD+4' };
+        if (alias[id.toUpperCase()]) id = alias[id.toUpperCase()];
         if (['WILD', 'WILD+4'].includes(id.toUpperCase())) {
             let card = this.hand.find(c => c.id === id.toUpperCase());
             if (!card) return undefined;
             card.color = color;
             return card;
         } else {
-
             return this.hand.find(c => c.id === id.toUpperCase() && c.color === color);
         }
     }

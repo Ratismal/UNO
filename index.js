@@ -2,9 +2,32 @@ const config = require('./config.json');
 const CatLoggr = require('cat-loggr');
 const loggr = new CatLoggr().setGlobal();
 const Eris = require('eris');
+const fs = require('fs'), path = require('path');
+const { Game, Player, Card } = require('./Structures');
 
-const client = new Eris(config.token, { getAllUsers: true, maxShards: 6 });
+let conf = {
+    getAllUsers: true, maxShards: config.maxShards || 6
+};
+if (config.shard) {
+    conf.firstShardID = config.shard;
+    conf.lastShardID = config.shard;
+}
+
+const client = new Eris(config.token, conf);
 const prefix = config.prefix;
+
+const games = {};
+let ready = false;
+
+process.on('exit', code => {
+    console.info('Exiting! Serializing current games...');
+    let inProgress = {};
+    for (const id in games) {
+        inProgress[id] = games[id].serialize();
+    }
+    console.info('Serialized', Object.keys(inProgress).length, 'games! Saving...');
+    fs.writeFileSync(path.join(__dirname, 'current-games.json'), JSON.stringify(inProgress, null, 2), { encoding: 'utf8' });
+});
 
 process.on('unhandledRejection', error => {
     // Will print "unhandledRejection err is not defined"
@@ -13,6 +36,18 @@ process.on('unhandledRejection', error => {
 
 client.on('ready', () => {
     console.log('ready!');
+
+    console.info('Attemting to load in-progress games...');
+    try {
+        const currentGames = require('./current-games.json');
+        for (const id in currentGames) {
+            games[id] = Game.deserialize(currentGames[id], client);
+        }
+        console.info('Restored', Object.keys(currentGames).length, 'games.');
+    } catch (err) {
+        console.error('Issue restoring old games:', err);
+    }
+    ready = true;
 });
 
 client.on('error', err => {
@@ -45,6 +80,7 @@ client.on('shardDisconnect', (err, id) => {
 });
 
 client.on('messageCreate', async (msg) => {
+    if (!ready) return;
     if (msg.content.toLowerCase().startsWith(prefix)) {
         let segments = msg.content.substring(prefix.length).trim().split('&&');
         if (segments.length > 2) return await msg.channel.createMessage('Sorry, you can only execute up to **two** commands with a single message!');
@@ -61,8 +97,6 @@ client.on('messageCreate', async (msg) => {
         }
     }
 });
-
-const games = {};
 
 const timeoutTimer = setInterval(async () => {
     for (const id in games) {
@@ -110,7 +144,7 @@ You can execute up to two commands in a single message by separating them with \
     async join(msg, words) {
         let game = games[msg.channel.id];
         if (!game) {
-            game = games[msg.channel.id] = new Game(msg.channel);
+            game = games[msg.channel.id] = new Game(client, msg.channel);
             game.generateDeck();
         }
         if (game.started) {
@@ -376,290 +410,7 @@ You can execute up to two commands in a single message by separating them with \
     }
 };
 
-class Game {
-    constructor(channel) {
-        this.channel = channel;
-        this.players = {};
-        this.queue = [];
-        this.deck = [];
-        this.discard = [];
-        this.finished = [];
-        this.started = false;
-        this.confirm = false;
-        this.lastChange = Date.now();
-        this.rules = {
-            drawSkip: {
-                desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
-                value: true,
-                name: 'Draws Skip'
-            },
-            initialCards: {
-                desc: 'How many cards to pick up at the beginning.',
-                value: 7,
-                name: 'Initial Cards'
-            },
-            mustPlay: {
-                desc: 'Whether someone must play a card if they are able to.',
-                value: false,
-                name: 'Must Play'
-            }
-        };
-    }
 
-    get player() {
-        return this.queue[0];
-    }
-
-    get flipped() {
-        return this.discard[this.discard.length - 1];
-    }
-
-    async next() {
-        this.queue.push(this.queue.shift());
-        this.queue = this.queue.filter(p => !p.finished);
-        this.player.sendHand(true);
-        this.lastChange = Date.now();
-    }
-
-    async send(content) {
-        await client.createMessage(this.channel.id, content);
-    }
-
-    addPlayer(member) {
-        this.lastChange = Date.now();
-        if (!this.players[member.id]) {
-            let player = this.players[member.id] = new Player(member, this);
-            this.queue.push(player);
-            return player;
-        }
-        else return null;
-    }
-
-    async notifyPlayer(player, cards = player.hand) {
-        try {
-            await player.send('You were dealt the following card(s):\n' + cards.map(c => `**${c}**`).join(' | '));
-        } catch (err) {
-            await this.send(`Hey <@${player.id}>, I can't DM you! Please make sure your DMs are enabled, and run \`uno hand\` to see your cards.`);
-        }
-    }
-
-    async dealAll(number, players = this.queue) {
-        let cards = {};
-        for (let i = 0; i < number; i++)
-            for (const player of players) {
-                if (this.deck.length === 0) {
-                    if (this.discard.length === 1) break;
-                    this.shuffleDeck();
-                }
-                let c = this.deck.pop();
-                if (!cards[player.id]) cards[player.id] = [];
-                cards[player.id].push(c.toString());
-                player.hand.push(c);
-            }
-        for (const player of players) {
-            player.called = false;
-            if (cards[player.id].length > 0)
-                await this.notifyPlayer(player, cards[player.id]);
-
-        }
-    }
-
-    async deal(player, number) {
-        let cards = [];
-        for (let i = 0; i < number; i++) {
-            if (this.deck.length === 0) {
-                if (this.discard.length === 1) break;
-                this.shuffleDeck();
-            }
-            let c = this.deck.pop();
-            cards.push(c.toString());
-            player.hand.push(c);
-        }
-        player.called = false;
-        if (cards.length > 0)
-            await this.notifyPlayer(player, cards);
-    }
-
-    generateDeck() {
-        for (const color of ['R', 'Y', 'G', 'B']) {
-            this.deck.push(new Card('0', color));
-            for (let i = 1; i < 10; i++)
-                for (let ii = 0; ii < 2; ii++)
-                    this.deck.push(new Card(i.toString(), color));
-            for (let i = 0; i < 2; i++)
-                this.deck.push(new Card('SKIP', color));
-            for (let i = 0; i < 2; i++)
-                this.deck.push(new Card('REVERSE', color));
-            for (let i = 0; i < 2; i++)
-                this.deck.push(new Card('+2', color));
-        }
-        for (let i = 0; i < 4; i++) {
-            this.deck.push(new Card('WILD'));
-            this.deck.push(new Card('WILD+4'));
-        }
-
-        this.shuffleDeck();
-    }
-
-    shuffleDeck() {
-        var j, x, i, a = [].concat(this.deck, this.discard);
-        for (i = a.length - 1; i > 0; i--) {
-            j = Math.floor(Math.random() * (i + 1));
-            x = a[i];
-            a[i] = a[j];
-            a[j] = x;
-        }
-        this.deck = a;
-        for (const card of this.deck.filter(c => c.wild))
-            card.color = undefined;
-        this.send('*Thfwwp!* The deck has been shuffled.');
-    }
-}
-
-class Player {
-    constructor(member, game) {
-        this.member = member;
-        this.game = game;
-        this.id = member.id;
-        this.hand = [];
-        this.called = false;
-        this.finished = false;
-    }
-
-    sortHand() {
-        this.hand.sort((a, b) => {
-            return a.value > b.value;
-        });
-    }
-
-    parseColor(color) {
-        switch ((color || '').toLowerCase()) {
-            case 'red':
-            case 'r':
-                color = 'R';
-                break;
-            case 'yellow':
-            case 'y':
-                color = 'Y';
-                break;
-            case 'green':
-            case 'g':
-                color = 'G';
-                break;
-            case 'blue':
-            case 'b':
-                color = 'B';
-                break;
-            default:
-                color = '';
-                break;
-        }
-        return color;
-    }
-
-    getCard(words) {
-        let color, id;
-        if (words.length === 1) {
-            id = words[0];
-        } else {
-            color = words[0];
-            id = words[1];
-        }
-        let _color = this.parseColor(color);
-        if (!_color) {
-            let temp = color;
-            color = id;
-            id = temp;
-            _color = this.parseColor(color);
-            if (!_color) {
-                this.game.send('You have to specify a valid color! Colors are **red**, **yellow**, **green**, and **blue**.\n`uno play <color> <value>`');
-                return null;
-            }
-        }
-        color = _color;
-        console.log(color, id);
-        if (['WILD', 'WILD+4'].includes(id.toUpperCase())) {
-            let card = this.hand.find(c => c.id === id.toUpperCase());
-            if (!card) return undefined;
-            card.color = color;
-            return card;
-        } else {
-
-            return this.hand.find(c => c.id === id.toUpperCase() && c.color === color);
-        }
-    }
-
-    async send(content) {
-        let chan = await this.member.user.getDMChannel();
-        await chan.createMessage(content);
-    }
-
-    async sendHand(turn = false) {
-        this.sortHand();
-        try {
-            await this.send((turn ? "It's your turn! " : '') + 'Here is your hand:\n\n' + this.hand.map(h => `**${h}**`).join(' | ') + `\n\nYou currently have ${this.hand.length} card(s).`);
-        } catch (err) {
-            await this.game.send(`Hey <@${this.id}>, I can't DM you! Please make sure your DMs are enabled, and run \`uno hand\` to see your cards.`);
-        }
-    }
-}
-
-class Card {
-    constructor(id, color) {
-        this.id = id;
-        this.wild = false;
-        this.color = color;
-        if (!this.color) this.wild = true;
-    }
-
-    get colorName() {
-        return {
-            R: 'Red',
-            Y: 'Yellow',
-            G: 'Green',
-            B: 'Blue'
-        }[this.color];
-    }
-
-    get colorCode() {
-        return {
-            R: 0xff5555,
-            Y: 0xffaa00,
-            G: 0x55aa55,
-            B: 0x5555ff
-        }[this.color] || 0x080808;
-    }
-
-    get URL() {
-        return `https://raw.githubusercontent.com/Ratismal/UNO/master/cards/${this.color || ''}${this.id}.png`;
-    }
-
-    get value() {
-        let val = 0;
-        switch (this.color) {
-            case 'R': val += 100000; break;
-            case 'Y': val += 10000; break;
-            case 'G': val += 1000; break;
-            case 'B': val += 100; break;
-            default: val += 1000000; break;
-        }
-        switch (this.id) {
-            case 'SKIP': val += 10; break;
-            case 'REVERSE': val += 11; break;
-            case '+2': val += 12; break;
-            case 'WILD': val += 13; break;
-            case 'WILD+4': val += 14; break;
-            default: val += parseInt(this.id); break;
-        }
-        return val;
-    }
-
-    toString() {
-        if (this.color)
-            return this.colorName + ' ' + this.id;
-        else return this.id;
-    }
-}
 
 console.log('Connecting...');
 client.connect();

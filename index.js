@@ -120,6 +120,10 @@ const timeoutTimer = setInterval(async () => {
                 desc = desc.join('\n');
                 out.embed.description = desc;
             }
+            if (game.queue.length === 0) {
+                out.embed.description += `\nThe game has been cancelled due to no remaining players.`;
+                delete games[id];
+            }
             await game.send(out);
         }
     }

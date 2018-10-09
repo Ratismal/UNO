@@ -85,8 +85,8 @@ module.exports = class Player {
                 let first = true;
                 while (!_color) {
                     let msg = await this.game.client.awaitQuery(this.game.channel.id, this.id, first
-                        ? 'Please choose a color for your wild card.'
-                        : 'You must choose a valid color: red, yellow, green, or blue.');
+                        ? 'You played a **wild card**! In your next message, say just the color you want the **wild card** to be.'
+                        : 'Say just the color for your **wild card**. One of: red, yellow, green, or blue.');
                     _color = this.parseColor(msg.content);
                     first = false;
                 }

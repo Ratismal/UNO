@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "cat-loggr": "^1.0.3",
+    "cat-loggr": "^1.0.8",
     "eris": "^0.8.2"
   }
 }

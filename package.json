@@ -10,6 +10,7 @@
   "license": "ISC",
   "dependencies": {
     "cat-loggr": "^1.0.8",
-    "eris": "^0.8.2"
+    "eris": "^0.8.2",
+    "moment": "^2.22.2"
   }
 }

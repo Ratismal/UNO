@@ -405,7 +405,7 @@ You can execute up to two commands in a single message by separating them with \
                 await game.next();
                 return {
                     embed: {
-                        description: `${pref}${drawn ? `${msg.author.username} has drawn and auto-played a ${game.flipped}.` : `A **${game.flipped}** has been played.`} ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
+                        description: `${pref}${drawn ? `${msg.author.username} has drawn and auto-played a **${game.flipped}**.` : `A **${game.flipped}** has been played.`} ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
                         thumbnail: { url: game.flipped.URL },
                         color: game.flipped.colorCode
                     }

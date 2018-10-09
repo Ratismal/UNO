@@ -41,6 +41,12 @@ module.exports = class Game {
                 type: 'boolean'
             },
             CALLOUT_PENALTY: {
+                desc: 'The number of cards to give someone when called out.',
+                value: 2,
+                name: 'Callout Penalty',
+                type: 'integer'
+            },
+            FALSE_CALLOUT_PENALTY: {
                 desc: 'The number of cards to give someone for falsely calling someone out.',
                 value: 2,
                 name: 'Callout Penalty',

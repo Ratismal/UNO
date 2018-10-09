@@ -467,16 +467,16 @@ You can execute up to two commands in a single message by separating them with \
                     player.called = true;
                 }
             }
-            game.dealAll(2, baddies);
+            game.dealAll(Math.max(1, game.rules.CALLOUT_PENALTY.value), baddies);
             console.log(baddies);
             if (baddies.length > 0)
-                return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up 2!`;
+                return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up ${Math.max(1, game.rules.CALLOUT_PENALTY.value)}!`;
             else {
-                if (game.rules.CALLOUT_PENALTY.value <= 0)
+                if (game.rules.FALSE_CALLOUT_PENALTY.value <= 0)
                     return 'There is nobody to call out.';
                 else {
-                    await game.deal(game.players[msg.author.id], game.rules.CALLOUT_PENALTY.value);
-                    return `There is nobody to call out. Pick up ${game.rules.CALLOUT_PENALTY.value}!`;
+                    await game.deal(game.players[msg.author.id], game.rules.FALSE_CALLOUT_PENALTY.value);
+                    return `There is nobody to call out. Pick up ${game.rules.FALSE_CALLOUT_PENALTY.value}!`;
                 }
             }
         } else {

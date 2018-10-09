@@ -60,7 +60,8 @@ const rules = {
         type: 'boolean'
     },
     AUTOPASS: {
-        desc: 'Automatically proceeds to the next turn after drawing, meaning that you cannot play drawn cards (without DRAW_AUTOPLAY).',
+        desc: 'Automatically proceeds to the next turn after drawing, meaning that you cannot play drawn cards (without DRAW_AUTOPLAY). (WIP)',
+        wip: true,
         value: true,
         name: 'Automatically Pass Turns',
         type: 'boolean'

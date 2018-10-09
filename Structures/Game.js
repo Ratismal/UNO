@@ -16,20 +16,42 @@ module.exports = class Game {
         this.drawn = 0;
         this.timeStarted = null;
         this.rules = {
-            drawSkip: {
+            DRAW_SKIP: {
                 desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
                 value: true,
-                name: 'Draws Skip'
+                name: 'Draws Skip',
+                type: 'boolean'
             },
-            initialCards: {
+            INITIAL_CARDS: {
                 desc: 'How many cards to pick up at the beginning.',
                 value: 7,
-                name: 'Initial Cards'
+                name: 'Initial Cards',
+                type: 'integer'
             },
-            mustPlay: {
+            MUST_PLAY: {
                 desc: 'Whether someone must play a card if they are able to.',
                 value: false,
-                name: 'Must Play'
+                name: 'Must Play',
+                type: 'boolean'
+            },
+            CALLOUTS: {
+                desc: 'Gives the ability to call someone out for not saying uno!',
+                value: true,
+                name: 'Callouts',
+                type: 'boolean'
+            },
+            CALLOUT_PENALTY: {
+                desc: 'The number of cards to give someone for falsely calling someone out.',
+                value: 2,
+                name: 'Callout Penalty',
+                type: 'integer'
+            },
+            AUTOPLAY_DRAW: {
+                desc: 'Automatically plays a card after drawing, if possible.',
+                wip: true,
+                value: false,
+                name: 'Automatically Play After Draw',
+                type: 'boolean'
             }
         };
     }
@@ -73,6 +95,64 @@ module.exports = class Game {
         }
 
         return obj;
+    }
+
+    serializeRule(key) {
+        key = key.toUpperCase();
+        let rule = this.rules[key];
+        if (!rule) return 'There is no rule with that key.';
+        return `**${rule.name}**\nKey: ${key}\nType: ${rule.type}\nValue: ${rule.value}\n\n${rule.desc}`;
+    }
+
+    serializeRules() {
+        let len = Object.keys(this.rules).reduce((acc, cur) => {
+            return cur.length > acc ? cur.length : acc;
+        }, 0);
+        let f = (_, key, value) => {
+            return `${key.padEnd(len, ' ')} = ${value}\n`;
+        };
+        let out = '```ini\n'
+        for (const key in this.rules) {
+            if (this.rules[key].wip) continue;
+            out += f`${key}${this.rules[key].value}`;
+        }
+        out += '```';
+        return out;
+    }
+
+    setRule(words) {
+        if (words.length % 2 === 1) return 'Provided a key without a value'
+        let rules = JSON.parse(JSON.stringify(this.rules));
+        for (let i = 0; i < words.length; i += 2) {
+            let key = words[i], value = words[i + 1];
+            key = key.toUpperCase();
+            let rule = rules[key];
+            if (!rule) return 'invalid key';
+
+            switch (rule.type) {
+                case 'boolean':
+                    try {
+                        value = JSON.parse(value);
+                    } catch (err) { }
+                    finally {
+                        if (typeof value !== 'boolean')
+                            return `${key}: Expected a boolean value, but received a ${typeof value}`;
+                    }
+                    break;
+                case 'integer':
+                    try {
+                        value = parseInt(value);
+                    } catch (err) { }
+                    finally {
+                        if (typeof value !== 'number')
+                            return `${key}: Expected a number value, but received a ${typeof value}`;
+                    }
+                    break;
+            }
+            rule.value = value;
+        }
+        this.rules = rules;
+        return true;
     }
 
     get player() {

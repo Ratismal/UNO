@@ -35,6 +35,8 @@ process.on('unhandledRejection', error => {
     console.error(error);
 });
 
+let globalGame;
+
 client.on('ready', () => {
     console.log('ready!');
 
@@ -49,6 +51,8 @@ client.on('ready', () => {
         console.error('Issue restoring old games:', err);
     }
     ready = true;
+
+    globalGame = new Game(client, {});
 });
 
 client.on('error', err => {
@@ -160,7 +164,9 @@ You can execute up to two commands in a single message by separating them with \
             return "You've already registered for this game!";
         else {
             if (game.queue.length === 1) {
-                return 'A game has been registered! Once all players have joined, type `uno start` to begin the game!';
+                return 'A game has been registered with you as the leader! Once all players have joined, type `uno start` to begin the game!'
+                    + '\n\nThe rules for this game are:\n' + game.serializeRules()
+                    + '\nYou can configure these or get a description with the `rules` command (uno rules <key> [value])';
             } else {
                 return 'You have joined the game! Please wait for it to start.';
             }
@@ -196,6 +202,35 @@ You can execute up to two commands in a single message by separating them with \
             game.queue = game.queue.filter(p => p.id !== msg.author.id);
             return out;
         } else return 'You haven\'t joined!';
+    },
+    async rules(msg, words) {
+
+        let game = games[msg.channel.id];
+        if (game) {
+            if (words.length === 0) {
+                return game.serializeRules();
+            } else if (words.length === 1) {
+                return game.serializeRule(words[0]);
+            } else {
+                if (game.started)
+                    return 'The game has already started, so you can\'t set rules.';
+                if (game.queue[0].id === msg.author.id) {
+                    let res = game.setRule(words);
+                    return res === true ? 'The rules have been updated!' + game.serializeRules() : 'Nothing has changed: ' + res;
+                } else {
+                    return 'You didn\'t create this game, so you can\'t set rules.';
+                }
+            }
+        } else {
+            if (words.length === 0) {
+                return globalGame.serializeRules();
+            } else if (words.length === 1) {
+                return globalGame.serializeRule(words[0]);
+            } else {
+                return 'No game has been started yet, so you can\'t set rules.';
+            }
+
+        }
     },
     async p(msg, words) { return await commands.play(msg, words); },
     async pl(msg, words) { return await commands.play(msg, words); },
@@ -254,7 +289,7 @@ You can execute up to two commands in a single message by separating them with \
                         }
                         game.deal(game.queue[1], amount);
                         extra = `${game.queue[1].member.user.username} picks up ${amount} cards! Tough break. `;
-                        if (game.rules.drawSkip.value === true) {
+                        if (game.rules.DRAW_SKIP.value === true) {
                             extra += ' Also, skip a turn!';
                             game.queue.push(game.queue.shift());
                         }
@@ -267,7 +302,7 @@ You can execute up to two commands in a single message by separating them with \
                         await game.deal(game.queue[1], 4);
                         // game.queue.unshift(player);
                         extra = `${game.queue[1].member.user.username} picks up 4! The current color is now **${card.colorName}**! `;
-                        if (game.rules.drawSkip.value === true) {
+                        if (game.rules.DRAW_SKIP.value === true) {
                             extra += ' Also, skip a turn!';
                             game.queue.push(game.queue.shift());
                         }
@@ -295,6 +330,15 @@ You can execute up to two commands in a single message by separating them with \
             if (!game.started) return "Sorry, but the game hasn't been started yet!";
 
             if (game.player.id !== msg.author.id) return `It's not your turn yet! It's currently ${game.player.member.user.username}'s turn.`;
+
+            if (game.rules.MUST_PLAY.value === true) {
+                for (const card of game.player.hand) {
+                    if (!game.flipped.color || card.wild || card.id === game.flipped.id
+                        || card.color === game.flipped.color) {
+                        return 'Sorry, you have to play a card if you\'re able!';
+                    }
+                }
+            }
 
             game.deal(game.player, 1);
             let player = game.player;
@@ -327,7 +371,7 @@ You can execute up to two commands in a single message by separating them with \
         if (game.queue.length > 1) {
             if (game.player.id !== msg.author.id)
                 return "Sorry, but you can't start a game you didn't create!";
-            await game.dealAll(game.rules.initialCards.value);
+            await game.dealAll(game.rules.INITIAL_CARDS.value);
             game.discard.push(game.deck.pop());
             game.started = true;
             game.timeStarted = Date.now();
@@ -415,6 +459,7 @@ You can execute up to two commands in a single message by separating them with \
     async callout(msg, words) {
         let game = games[msg.channel.id];
         if (game && game.started && game.players[msg.author.id]) {
+            if (game.rules.CALLOUTS.value === false) return 'Callouts have been disabled for this game.';
             let baddies = [];
             for (const player of game.queue) {
                 if (/*player !== game.player &&*/ player.hand.length === 1 && !player.called) {
@@ -426,7 +471,14 @@ You can execute up to two commands in a single message by separating them with \
             console.log(baddies);
             if (baddies.length > 0)
                 return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up 2!`;
-            else return 'There is nobody to call out.';
+            else {
+                if (game.rules.CALLOUT_PENALTY.value <= 0)
+                    return 'There is nobody to call out.';
+                else {
+                    await game.deal(game.players[msg.author.id], game.rules.CALLOUT_PENALTY.value);
+                    return `There is nobody to call out. Pick up ${game.rules.CALLOUT_PENALTY.value}!`;
+                }
+            }
         } else {
             return 'You aren\'t even in the game!';
         }

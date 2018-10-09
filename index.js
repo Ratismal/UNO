@@ -433,8 +433,8 @@ You can execute up to two commands in a single message by separating them with \
             }
 
             let [card] = await game.deal(game.player, 1);
-            if (game.rules.DRAW_AUTOPLAY === true && !card.wild
-                && (!game.flipped.color || card.id === game.flipped.id || card.color === game.flipped.color)) {
+            if (game.rules.DRAW_AUTOPLAY === true
+                && (!game.flipped.color || card.wild || card.id === game.flipped.id || card.color === game.flipped.color)) {
                 return await commands.play(msg, card.toString().split(' '), true);
             }
             let player = game.player;

@@ -15,51 +15,7 @@ module.exports = class Game {
         this.lastChange = Date.now();
         this.drawn = 0;
         this.timeStarted = null;
-        this.rules = {
-            DRAW_SKIP: {
-                desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
-                value: true,
-                name: 'Draws Skip',
-                type: 'boolean'
-            },
-            INITIAL_CARDS: {
-                desc: 'How many cards to pick up at the beginning.',
-                value: 7,
-                name: 'Initial Cards',
-                type: 'integer'
-            },
-            MUST_PLAY: {
-                desc: 'Whether someone must play a card if they are able to.',
-                value: false,
-                name: 'Must Play',
-                type: 'boolean'
-            },
-            CALLOUTS: {
-                desc: 'Gives the ability to call someone out for not saying uno!',
-                value: true,
-                name: 'Callouts',
-                type: 'boolean'
-            },
-            CALLOUT_PENALTY: {
-                desc: 'The number of cards to give someone when called out.',
-                value: 2,
-                name: 'Callout Penalty',
-                type: 'integer'
-            },
-            FALSE_CALLOUT_PENALTY: {
-                desc: 'The number of cards to give someone for falsely calling someone out.',
-                value: 2,
-                name: 'Callout Penalty',
-                type: 'integer'
-            },
-            AUTOPLAY_DRAW: {
-                desc: 'Automatically plays a card after drawing, if possible.',
-                wip: true,
-                value: false,
-                name: 'Automatically Play After Draw',
-                type: 'boolean'
-            }
-        };
+        this.rules = client.ruleset;
     }
 
     static deserialize(obj, client) {
@@ -105,9 +61,9 @@ module.exports = class Game {
 
     serializeRule(key) {
         key = key.toUpperCase();
-        let rule = this.rules[key];
+        let rule = this.client.rules[key];
         if (!rule) return 'There is no rule with that key.';
-        return `**${rule.name}**\nKey: ${key}\nType: ${rule.type}\nValue: ${rule.value}\n\n${rule.desc}`;
+        return `**${rule.name}**\nKey: ${key}\nType: ${rule.type}\nValue: ${this.rules[key]}\n\n${rule.desc}`;
     }
 
     serializeRules() {
@@ -118,9 +74,9 @@ module.exports = class Game {
             return `${key.padEnd(len, ' ')} = ${value}\n`;
         };
         let out = '```ini\n'
-        for (const key in this.rules) {
-            if (this.rules[key].wip) continue;
-            out += f`${key}${this.rules[key].value}`;
+        for (const key in this.client.rules) {
+            if (this.client.rules[key].wip) continue;
+            out += f`${key}${this.rules[key]}`;
         }
         out += '```';
         return out;
@@ -132,7 +88,7 @@ module.exports = class Game {
         for (let i = 0; i < words.length; i += 2) {
             let key = words[i], value = words[i + 1];
             key = key.toUpperCase();
-            let rule = rules[key];
+            let rule = this.client.rules[key];
             if (!rule) return 'invalid key';
 
             switch (rule.type) {
@@ -155,7 +111,7 @@ module.exports = class Game {
                     }
                     break;
             }
-            rule.value = value;
+            rules[key] = value;
         }
         this.rules = rules;
         return true;
@@ -200,18 +156,22 @@ module.exports = class Game {
 
     async dealAll(number, players = this.queue) {
         let cards = {};
-        for (let i = 0; i < number; i++)
+        for (let i = 0; i < number; i++) {
+            let br = false;
             for (const player of players) {
                 if (this.deck.length === 0) {
-                    if (this.discard.length === 1) break;
+                    if (this.discard.length <= 1) { br = true; break; }
                     this.shuffleDeck();
                 }
                 let c = this.deck.pop();
+                if (!c) { br = true; break; }
                 if (!cards[player.id]) cards[player.id] = [];
                 cards[player.id].push(c.toString());
                 player.hand.push(c);
                 this.drawn++;
             }
+            if (br) break;
+        }
         for (const player of players) {
             player.called = false;
             if (cards[player.id].length > 0)
@@ -224,17 +184,19 @@ module.exports = class Game {
         let cards = [];
         for (let i = 0; i < number; i++) {
             if (this.deck.length === 0) {
-                if (this.discard.length === 1) break;
+                if (this.discard.length <= 1) break;
                 this.shuffleDeck();
             }
             let c = this.deck.pop();
-            cards.push(c.toString());
+            cards.push(c);
             player.hand.push(c);
             this.drawn++;
         }
         player.called = false;
         if (cards.length > 0)
-            await this.notifyPlayer(player, cards);
+            await this.notifyPlayer(player, cards.map(c => c.toString()));
+
+        return cards;
     }
 
     generateDeck() {
@@ -259,16 +221,20 @@ module.exports = class Game {
     }
 
     shuffleDeck() {
+        let top = this.discard.pop();
         var j, x, i, a = [].concat(this.deck, this.discard);
-        for (i = a.length - 1; i > 0; i--) {
-            j = Math.floor(Math.random() * (i + 1));
-            x = a[i];
-            a[i] = a[j];
-            a[j] = x;
-        }
+        if (a.length > 0)
+            for (i = a.length - 1; i > 0; i--) {
+                j = Math.floor(Math.random() * (i + 1));
+                x = a[i];
+                a[i] = a[j];
+                a[j] = x;
+            }
         this.deck = a;
         for (const card of this.deck.filter(c => c.wild))
             card.color = undefined;
+        if (top)
+            this.discard.push(top);
         this.send('*Thfwwp!* The deck has been shuffled.');
     }
 }

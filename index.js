@@ -14,7 +14,91 @@ if (config.shard) {
     conf.lastShardID = config.shard;
 }
 
-const client = new Eris(config.token, conf);
+const queryCache = {};
+
+const rules = {
+    DRAW_SKIP: {
+        desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
+        value: true,
+        name: 'Draws Skip',
+        type: 'boolean'
+    },
+    INITIAL_CARDS: {
+        desc: 'How many cards to pick up at the beginning.',
+        value: 7,
+        name: 'Initial Cards',
+        type: 'integer'
+    },
+    MUST_PLAY: {
+        desc: 'Whether someone must play a card if they are able to.',
+        value: false,
+        name: 'Must Play',
+        type: 'boolean'
+    },
+    CALLOUTS: {
+        desc: 'Gives the ability to call someone out for not saying uno!',
+        value: true,
+        name: 'Callouts',
+        type: 'boolean'
+    },
+    CALLOUT_PENALTY: {
+        desc: 'The number of cards to give someone when called out.',
+        value: 2,
+        name: 'Callout Penalty',
+        type: 'integer'
+    },
+    FALSE_CALLOUT_PENALTY: {
+        desc: 'The number of cards to give someone for falsely calling someone out.',
+        value: 2,
+        name: 'Callout Penalty',
+        type: 'integer'
+    },
+    DRAW_AUTOPLAY: {
+        desc: 'Automatically plays a card after drawing, if possible. Will not autoplay wild cards.',
+        value: false,
+        name: 'Automatically Play After Draw',
+        type: 'boolean'
+    },
+    AUTOPASS: {
+        desc: 'Automatically proceeds to the next turn after drawing, meaning that you cannot play drawn cards (without DRAW_AUTOPLAY).',
+        value: true,
+        name: 'Automatically Pass Turns',
+        type: 'boolean'
+    }
+};
+
+class Client extends Eris.Client {
+    constructor(...args) {
+        super(...args);
+    }
+
+    get rules() {
+        return rules;
+    }
+
+    get ruleset() {
+        let obj = {};
+        for (const key in rules) {
+            obj[key] = rules[key].value;
+        }
+        return obj;
+    }
+
+    awaitQuery(channelId, userId, message) {
+        return new Promise((res, rej) => {
+            if (!queryCache[channelId]) queryCache[channelId] = {};
+            if (queryCache[channelId][userId])
+                queryCache[channelId][userId].reject();
+
+            queryCache[channelId][userId] = {
+                resolve: res, reject: rej
+            };
+            this.createMessage(channelId, message);
+        });
+    }
+}
+
+const client = new Client(config.token, conf);
 const prefix = config.prefix;
 
 const games = {};
@@ -86,6 +170,10 @@ client.on('shardDisconnect', (err, id) => {
 
 client.on('messageCreate', async (msg) => {
     if (!ready) return;
+    if (queryCache[msg.channel.id] && queryCache[msg.channel.id][msg.author.id]) {
+        queryCache[msg.channel.id][msg.author.id].resolve(msg);
+        return delete queryCache[msg.channel.id][msg.author.id];
+    }
     if (msg.content.toLowerCase().startsWith(prefix)) {
         let segments = msg.content.substring(prefix.length).trim().split('&&');
         if (segments.length > 2) return await msg.channel.createMessage('Sorry, you can only execute up to **two** commands with a single message!');
@@ -144,6 +232,8 @@ const commands = {
 **${prefix.toUpperCase()} PLAY <colour> <value>** - Plays a card! Colours and values are interchangeable.
 **${prefix.toUpperCase()} PICKUP** - Picks up a card!
 **${prefix.toUpperCase()} CALLOUT** - Calls a player out for only having one card left!
+**${prefix.toUpperCase()} HAND** - Checks your hand!
+**${prefix.toUpperCase()} RULES** - Checks or sets the game rules!
 **${prefix.toUpperCase()}!** - Let everyone know that you only have one card left!
 
 You can execute up to two commands in a single message by separating them with \`&&\`!`;
@@ -235,14 +325,15 @@ You can execute up to two commands in a single message by separating them with \
     async p(msg, words) { return await commands.play(msg, words); },
     async pl(msg, words) { return await commands.play(msg, words); },
     async ply(msg, words) { return await commands.play(msg, words); },
-    async play(msg, words) {
+    async play(msg, words, drawn = false) {
         let game = games[msg.channel.id];
         if (game) {
             if (!game.started) return "Sorry, but the game hasn't been started yet!";
 
             if (game.player.id !== msg.author.id) return `It's not your turn yet! It's currently ${game.player.member.user.username}'s turn.`;
 
-            let card = game.player.getCard(words);
+            console.log(words);
+            let card = await game.player.getCard(words);
             if (card === null) return;
             if (!card) return "It doesn't seem like you have that card! Try again.";
 
@@ -289,7 +380,7 @@ You can execute up to two commands in a single message by separating them with \
                         }
                         game.deal(game.queue[1], amount);
                         extra = `${game.queue[1].member.user.username} picks up ${amount} cards! Tough break. `;
-                        if (game.rules.DRAW_SKIP.value === true) {
+                        if (game.rules.DRAW_SKIP === true) {
                             extra += ' Also, skip a turn!';
                             game.queue.push(game.queue.shift());
                         }
@@ -302,7 +393,7 @@ You can execute up to two commands in a single message by separating them with \
                         await game.deal(game.queue[1], 4);
                         // game.queue.unshift(player);
                         extra = `${game.queue[1].member.user.username} picks up 4! The current color is now **${card.colorName}**! `;
-                        if (game.rules.DRAW_SKIP.value === true) {
+                        if (game.rules.DRAW_SKIP === true) {
                             extra += ' Also, skip a turn!';
                             game.queue.push(game.queue.shift());
                         }
@@ -313,7 +404,7 @@ You can execute up to two commands in a single message by separating them with \
                 await game.next();
                 return {
                     embed: {
-                        description: `${pref}A **${game.flipped}** has been played. ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
+                        description: `${pref}${drawn ? `${msg.author.username} has drawn and auto-played a ${game.flipped}.` : `A **${game.flipped}** has been played.`} ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
                         thumbnail: { url: game.flipped.URL },
                         color: game.flipped.colorCode
                     }
@@ -331,7 +422,7 @@ You can execute up to two commands in a single message by separating them with \
 
             if (game.player.id !== msg.author.id) return `It's not your turn yet! It's currently ${game.player.member.user.username}'s turn.`;
 
-            if (game.rules.MUST_PLAY.value === true) {
+            if (game.rules.MUST_PLAY === true) {
                 for (const card of game.player.hand) {
                     if (!game.flipped.color || card.wild || card.id === game.flipped.id
                         || card.color === game.flipped.color) {
@@ -340,7 +431,11 @@ You can execute up to two commands in a single message by separating them with \
                 }
             }
 
-            game.deal(game.player, 1);
+            let [card] = await game.deal(game.player, 1);
+            if (game.rules.DRAW_AUTOPLAY === true && !card.wild
+                && (!game.flipped.color || card.id === game.flipped.id || card.color === game.flipped.color)) {
+                return await commands.play(msg, [card.toString()], true);
+            }
             let player = game.player;
             await game.next();
             return {
@@ -371,8 +466,10 @@ You can execute up to two commands in a single message by separating them with \
         if (game.queue.length > 1) {
             if (game.player.id !== msg.author.id)
                 return "Sorry, but you can't start a game you didn't create!";
-            await game.dealAll(game.rules.INITIAL_CARDS.value);
+            // flip top card before dealing. this is wrong, i know, but accounts for using all 
+            // the cards in the dealing phase
             game.discard.push(game.deck.pop());
+            await game.dealAll(game.rules.INITIAL_CARDS);
             game.started = true;
             game.timeStarted = Date.now();
             return {
@@ -459,7 +556,7 @@ You can execute up to two commands in a single message by separating them with \
     async callout(msg, words) {
         let game = games[msg.channel.id];
         if (game && game.started && game.players[msg.author.id]) {
-            if (game.rules.CALLOUTS.value === false) return 'Callouts have been disabled for this game.';
+            if (game.rules.CALLOUTS === false) return 'Callouts have been disabled for this game.';
             let baddies = [];
             for (const player of game.queue) {
                 if (/*player !== game.player &&*/ player.hand.length === 1 && !player.called) {
@@ -467,16 +564,16 @@ You can execute up to two commands in a single message by separating them with \
                     player.called = true;
                 }
             }
-            game.dealAll(Math.max(1, game.rules.CALLOUT_PENALTY.value), baddies);
+            game.dealAll(Math.max(1, game.rules.CALLOUT_PENALTY), baddies);
             console.log(baddies);
             if (baddies.length > 0)
-                return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up ${Math.max(1, game.rules.CALLOUT_PENALTY.value)}!`;
+                return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up ${Math.max(1, game.rules.CALLOUT_PENALTY)}!`;
             else {
-                if (game.rules.FALSE_CALLOUT_PENALTY.value <= 0)
+                if (game.rules.FALSE_CALLOUT_PENALTY <= 0)
                     return 'There is nobody to call out.';
                 else {
-                    await game.deal(game.players[msg.author.id], game.rules.FALSE_CALLOUT_PENALTY.value);
-                    return `There is nobody to call out. Pick up ${game.rules.FALSE_CALLOUT_PENALTY.value}!`;
+                    await game.deal(game.players[msg.author.id], game.rules.FALSE_CALLOUT_PENALTY);
+                    return `There is nobody to call out. Pick up ${game.rules.FALSE_CALLOUT_PENALTY}!`;
                 }
             }
         } else {

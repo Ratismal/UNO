@@ -62,7 +62,7 @@ module.exports = class Player {
         return color;
     }
 
-    getCard(words) {
+    async getCard(words) {
         let color, id;
         if (words.length === 1) {
             let f = words[0][0].toLowerCase();
@@ -76,20 +76,33 @@ module.exports = class Player {
             color = words[0];
             id = words[1];
         }
+        let wild = ['WILD', 'WILD+4'];
+        let alias = { 'W': 'WILD', 'W+4': 'WILD+4' };
+
         let _color = this.parseColor(color);
         if (!_color) {
-            let temp = color;
-            color = id;
-            id = temp;
-            _color = this.parseColor(color);
-            if (!_color) {
-                this.game.send('You have to specify a valid color! Colors are **red**, **yellow**, **green**, and **blue**.\n`uno play <color> <value>`');
-                return null;
+            if (!color && (wild.includes(id.toUpperCase()) || alias[id.toUpperCase()])) {
+                let first = true;
+                while (!_color) {
+                    let msg = await this.game.client.awaitQuery(this.game.channel.id, this.id, first
+                        ? 'Please choose a color for your wild card.'
+                        : 'You must choose a valid color: red, yellow, green, or blue.');
+                    _color = this.parseColor(msg.content);
+                    first = false;
+                }
+            } else {
+                let temp = color;
+                color = id;
+                id = temp;
+                _color = this.parseColor(color);
+                if (!_color) {
+                    this.game.send('You have to specify a valid color! Colors are **red**, **yellow**, **green**, and **blue**.\n`uno play <color> <value>`');
+                    return null;
+                }
             }
         }
         color = _color;
         console.log(color, id);
-        let alias = { 'W': 'WILD', 'W+4': 'WILD+4' };
         if (alias[id.toUpperCase()]) id = alias[id.toUpperCase()];
         if (['WILD', 'WILD+4'].includes(id.toUpperCase())) {
             let card = this.hand.find(c => c.id === id.toUpperCase());

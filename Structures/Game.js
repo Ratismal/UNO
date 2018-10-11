@@ -104,11 +104,15 @@ module.exports = class Game {
                     break;
                 case 'integer':
                     try {
-                        value = parseInt(value);
+                        value = Number(value);
                     } catch (err) { }
                     finally {
                         if (typeof value !== 'number')
                             return `${key}: Expected a number value, but received a ${typeof value}`;
+                        if (typeof rule.min === 'number' && value < rule.min)
+                            return `${key}: Expected a value greater than or equal to ${rule.min}, but received ${value}`;
+                        if (typeof rule.max === 'number' && value > rule.max)
+                            return `${key}: Expected a value less than or equal to ${rule.max}, but received ${value}`;
                     }
                     break;
             }

@@ -5,13 +5,16 @@ module.exports.rules = {
         desc: 'The number of decks to use.',
         value: 1,
         name: 'Decks',
-        type: 'integer'
+        type: 'integer',
+        max: 8,
+        min: 1
     },
     INITIAL_CARDS: {
         desc: 'How many cards to pick up at the beginning.',
         value: 7,
         name: 'Initial Cards',
-        type: 'integer'
+        type: 'integer',
+        min: 1
     },
     DRAW_SKIP: {
         desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',

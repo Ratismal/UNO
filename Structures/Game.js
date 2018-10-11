@@ -1,5 +1,6 @@
 const Player = require('./Player');
 const Card = require('./Card');
+const moment = require('moment');
 
 module.exports = class Game {
     constructor(client, channel) {
@@ -74,7 +75,7 @@ module.exports = class Game {
             return `${key.padEnd(len, ' ')} = ${value}\n`;
         };
         let out = '```ini\n'
-        for (const key in this.client.rules) {
+        for (const key of this.client.ruleKeys) {
             if (this.client.rules[key].wip) continue;
             out += f`${key}${this.rules[key]}`;
         }
@@ -154,6 +155,49 @@ module.exports = class Game {
         }
     }
 
+    embed(desc) {
+        return {
+            embed: {
+                description: desc,
+                thumbnail: { url: this.flipped.URL },
+                color: this.flipped.colorCode,
+                footer: {
+                    text: `Decks: ${this.rules.DECKS} (${this.rules.DECKS * 108} cards) | Remaining: ${this.deck.length} | Discarded: ${this.discard.length}`,
+                    icon_url: 'https://raw.githubusercontent.com/Ratismal/UNO/master/cards/logo.png'
+                },
+                timestamp: moment(this.timeStarted),
+            }
+        }
+    }
+
+    scoreboard() {
+        let out = 'The game is now over. Thanks for playing! Here is the scoreboard:\n';
+        for (let i = 0; i < this.finished.length; i++) {
+            out += `${i + 1}. **${this.finished[i].member.user.username}**\n`;
+        }
+        let diff = moment.duration(moment() - this.timeStarted);
+        let d = [];
+        if (diff.days() > 0) d.push(`${diff.days()} day${diff.days() === 1 ? '' : 's'}`);
+        if (diff.hours() > 0) d.push(`${diff.hours()} hour${diff.hours() === 1 ? '' : 's'}`);
+        d.push(`${diff.minutes()} minute${diff.minutes() === 1 ? '' : 's'}`);
+        if (d.length > 1) {
+            d[d.length - 1] = 'and ' + d[d.length - 1];
+        }
+        d = d.join(', ');
+
+        out += `\nThis game lasted **${d}**, and **${this.drawn}** cards were drawn!`;
+        return out;
+    }
+
+    async start() {
+        this.generateDeck();
+
+        this.discard.push(this.deck.pop());
+        await this.dealAll(this.rules.INITIAL_CARDS);
+        this.started = true;
+        this.timeStarted = Date.now();
+    }
+
     async dealAll(number, players = this.queue) {
         let cards = {};
         for (let i = 0; i < number; i++) {
@@ -200,21 +244,23 @@ module.exports = class Game {
     }
 
     generateDeck() {
-        for (const color of ['R', 'Y', 'G', 'B']) {
-            this.deck.push(new Card('0', color));
-            for (let i = 1; i < 10; i++)
-                for (let ii = 0; ii < 2; ii++)
-                    this.deck.push(new Card(i.toString(), color));
-            for (let i = 0; i < 2; i++)
-                this.deck.push(new Card('SKIP', color));
-            for (let i = 0; i < 2; i++)
-                this.deck.push(new Card('REVERSE', color));
-            for (let i = 0; i < 2; i++)
-                this.deck.push(new Card('+2', color));
-        }
-        for (let i = 0; i < 4; i++) {
-            this.deck.push(new Card('WILD'));
-            this.deck.push(new Card('WILD+4'));
+        for (let d = 0; d < this.rules.DECKS; d++) {
+            for (const color of ['R', 'Y', 'G', 'B']) {
+                this.deck.push(new Card('0', color));
+                for (let i = 1; i < 10; i++)
+                    for (let ii = 0; ii < 2; ii++)
+                        this.deck.push(new Card(i.toString(), color));
+                for (let i = 0; i < 2; i++)
+                    this.deck.push(new Card('SKIP', color));
+                for (let i = 0; i < 2; i++)
+                    this.deck.push(new Card('REVERSE', color));
+                for (let i = 0; i < 2; i++)
+                    this.deck.push(new Card('+2', color));
+            }
+            for (let i = 0; i < 4; i++) {
+                this.deck.push(new Card('WILD'));
+                this.deck.push(new Card('WILD+4'));
+            }
         }
 
         this.shuffleDeck();

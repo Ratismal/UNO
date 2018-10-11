@@ -16,57 +16,7 @@ if (config.shard) {
 
 const queryCache = {};
 
-const rules = {
-    DRAW_SKIP: {
-        desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
-        value: true,
-        name: 'Draws Skip',
-        type: 'boolean'
-    },
-    INITIAL_CARDS: {
-        desc: 'How many cards to pick up at the beginning.',
-        value: 7,
-        name: 'Initial Cards',
-        type: 'integer'
-    },
-    MUST_PLAY: {
-        desc: 'Whether someone must play a card if they are able to.',
-        value: false,
-        name: 'Must Play',
-        type: 'boolean'
-    },
-    CALLOUTS: {
-        desc: 'Gives the ability to call someone out for not saying uno!',
-        value: true,
-        name: 'Callouts',
-        type: 'boolean'
-    },
-    CALLOUT_PENALTY: {
-        desc: 'The number of cards to give someone when called out.',
-        value: 2,
-        name: 'Callout Penalty',
-        type: 'integer'
-    },
-    FALSE_CALLOUT_PENALTY: {
-        desc: 'The number of cards to give someone for falsely calling someone out.',
-        value: 2,
-        name: 'Callout Penalty',
-        type: 'integer'
-    },
-    DRAW_AUTOPLAY: {
-        desc: 'Automatically plays a card after drawing, if possible. Will not autoplay wild cards.',
-        value: false,
-        name: 'Automatically Play After Draw',
-        type: 'boolean'
-    },
-    AUTOPASS: {
-        desc: 'Automatically proceeds to the next turn after drawing, meaning that you cannot play drawn cards (without DRAW_AUTOPLAY). (WIP)',
-        wip: true,
-        value: true,
-        name: 'Automatically Pass Turns',
-        type: 'boolean'
-    }
-};
+const { rules, ruleKeys } = require('./rules');
 
 class Client extends Eris.Client {
     constructor(...args) {
@@ -75,6 +25,10 @@ class Client extends Eris.Client {
 
     get rules() {
         return rules;
+    }
+
+    get ruleKeys() {
+        return ruleKeys;
     }
 
     get ruleset() {
@@ -245,7 +199,6 @@ You can execute up to two commands in a single message by separating them with \
         let game = games[msg.channel.id];
         if (!game) {
             game = games[msg.channel.id] = new Game(client, msg.channel);
-            game.generateDeck();
         }
         if (game.started) {
             return 'Sorry, this game has already started!';
@@ -272,22 +225,13 @@ You can execute up to two commands in a single message by separating them with \
             if (game.started && game.queue.length <= 2) {
                 game.queue = game.queue.filter(p => p.id !== msg.author.id);
                 game.finished.push(game.queue[0]);
-                out += 'The game is now over. Thanks for playing! Here is the scoreboard:\n';
-                for (let i = 0; i < game.finished.length; i++) {
-                    out += `${i + 1}. **${game.finished[i].member.user.username}**\n`;
-                }
+                out += game.scoreboard();
                 delete games[game.channel.id];
                 return out;
             }
             if (game.started && game.player.member.id === msg.author.id) {
                 game.next();
-                out = {
-                    embed: {
-                        description: `${out}A **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`,
-                        thumbnail: { url: game.flipped.URL },
-                        color: game.flipped.colorCode
-                    }
-                };
+                out = game.embed(`${out}A **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`);
             }
             delete game.players[msg.author.id];
             game.queue = game.queue.filter(p => p.id !== msg.author.id);
@@ -333,7 +277,6 @@ You can execute up to two commands in a single message by separating them with \
 
             if (game.player.id !== msg.author.id) return `It's not your turn yet! It's currently ${game.player.member.user.username}'s turn.`;
 
-            console.log(words);
             let card = await game.player.getCard(words);
             if (card === null) return;
             if (!card) return "It doesn't seem like you have that card! Try again.";
@@ -348,10 +291,7 @@ You can execute up to two commands in a single message by separating them with \
                     pref = `${game.player.member.user.username} has no more cards! They finished in **Rank #${game.finished.length}**! :tada:\n\n`;
                     if (2 === game.queue.length) {
                         game.finished.push(game.queue[1]);
-                        pref += 'The game is now over. Thanks for playing! Here is the scoreboard:\n';
-                        for (let i = 0; i < game.finished.length; i++) {
-                            pref += `${i + 1}. **${game.finished[i].member.user.username}**\n`;
-                        }
+                        pref = game.scoreboard();
                         delete games[game.channel.id];
                         return pref;
 
@@ -403,13 +343,7 @@ You can execute up to two commands in a single message by separating them with \
                 }
 
                 await game.next();
-                return {
-                    embed: {
-                        description: `${pref}${drawn ? `${msg.author.username} has drawn and auto-played a **${game.flipped}**.` : `A **${game.flipped}** has been played.`} ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`,
-                        thumbnail: { url: game.flipped.URL },
-                        color: game.flipped.colorCode
-                    }
-                };
+                return game.embed(`${pref}${drawn ? `${msg.author.username} has drawn and auto-played a **${game.flipped}**.` : `A **${game.flipped}** has been played.`} ${extra}\n\nIt is now ${game.player.member.user.username}'s turn!`);
             } else return "Sorry, you can't play that card here!";
 
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
@@ -439,14 +373,7 @@ You can execute up to two commands in a single message by separating them with \
             }
             let player = game.player;
             await game.next();
-            return {
-                embed: {
-                    description: `${player.member.user.username} picked up a card.\n\nA **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`,
-                    thumbnail: { url: game.flipped.URL },
-                    color: game.flipped.colorCode
-                }
-            };
-
+            return game.embed(`${player.member.user.username} picked up a card.\n\nA **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`);
         } else return "Sorry, but a game hasn't been created yet! Do `uno join` to create one.";
     },
     async hand(msg, words) {
@@ -467,19 +394,11 @@ You can execute up to two commands in a single message by separating them with \
         if (game.queue.length > 1) {
             if (game.player.id !== msg.author.id)
                 return "Sorry, but you can't start a game you didn't create!";
+            await game.start();
             // flip top card before dealing. this is wrong, i know, but accounts for using all 
             // the cards in the dealing phase
-            game.discard.push(game.deck.pop());
-            await game.dealAll(game.rules.INITIAL_CARDS);
-            game.started = true;
-            game.timeStarted = Date.now();
-            return {
-                embed: {
-                    description: `The game has begun with ${game.queue.length} players! The currently flipped card is: **${game.flipped}**. \n\nIt is now ${game.player.member.user.username}'s turn!`,
-                    thumbnail: { url: game.flipped.URL },
-                    color: game.flipped.colorCode
-                }
-            };
+
+            return game.embed(`The game has begun with ${game.queue.length} players! The currently flipped card is: **${game.flipped}**. \n\nIt is now ${game.player.member.user.username}'s turn!`);
         } else {
             return "There aren't enough people to play!";
         }
@@ -523,25 +442,19 @@ You can execute up to two commands in a single message by separating them with \
         } else if (!game.started) {
             return `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}**`).join('\n')}`;
         } else {
-            console.log(moment() - game.timeStarted);
             let diff = moment.duration(moment() - game.timeStarted);
             let d = [];
             if (diff.days() > 0) d.push(`${diff.days()} day${diff.days() === 1 ? '' : 's'}`);
             if (diff.hours() > 0) d.push(`${diff.hours()} hour${diff.hours() === 1 ? '' : 's'}`);
-            if (diff.minutes() > 0) d.push(`${diff.minutes()} minute${diff.minutes() === 1 ? '' : 's'}`);
+            d.push(`${diff.minutes()} minute${diff.minutes() === 1 ? '' : 's'}`);
             if (d.length > 1) {
                 d[d.length - 1] = 'and ' + d[d.length - 1];
             }
             d = d.join(', ');
-            return {
-                content: `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`
-                    + `\n\nThis game has lasted **${d}**. **${game.drawn}** cards have been drawn!\n\n`,
-                embed: {
-                    description: `A ** ${game.flipped}** has been played.\n\nIt is currently ${game.player.member.user.username} 's turn!`,
-                    thumbnail: { url: game.flipped.URL },
-                    color: game.flipped.colorCode
-                }
-            };
+            let out = game.embed(`A ** ${game.flipped}** has been played.\n\nIt is currently ${game.player.member.user.username} 's turn!`);
+            out.content = `Here are the players in this game:\n${game.queue.map(p => `**${p.member.user.username}** | ${p.hand.length} card(s)`).join('\n')}`
+                + `\n\nThis game has lasted **${d}**. **${game.drawn}** cards have been drawn!\n\n`;
+            return out;
         }
     },
     async['!'](msg, words) {

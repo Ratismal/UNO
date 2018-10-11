@@ -1,3 +1,5 @@
+import { setInterval, clearInterval } from "timers";
+
 console.log(window.location.url);
 
 if (!localStorage.token) {
@@ -37,6 +39,8 @@ function getUrl(card) {
     return `https://raw.githubusercontent.com/Ratismal/UNO/master/cards/${card.color || ''}${card.id}.png`;
 }
 
+let interval;
+
 const methods = {
     hello(data) {
         send('authorize', { token: localStorage.token });
@@ -74,9 +78,14 @@ function startWebsocket() {
     ws.onopen = () => {
         console.log('Websocket Opened!');
         retry = -1;
+
+        let interval = setInterval(() => {
+            send('ping');
+        }, 5000);
     }
 
     ws.onclose = () => {
+        clearInterval(interval);
         if (retry < 4);
         retry++;
         let ret = ((2 ** retry) * 5) * 1000;
@@ -85,6 +94,7 @@ function startWebsocket() {
         setTimeout(() => {
             startWebsocket();
         }, ret);
+
     }
 
     ws.onerror = err => {

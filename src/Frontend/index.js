@@ -21,6 +21,10 @@ class WsMethods {
         ctx.websocket.send(JSON.stringify(data));
     }
 
+    async method_ping(ctx, data) {
+        await this.send(ctx, { code: 'pong' });
+    }
+
     async method_hello(ctx, data) {
         await this.send(ctx, { code: 'message', message: 'ur cute, but auth pls' });
     }

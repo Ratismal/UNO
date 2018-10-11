@@ -1,0 +1,20 @@
+section {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+#card-wrapper {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+.card {
+    flex: 0 0 auto;
+    margin-right: -80px;
+    transition-duration: 0.3s;
+}
+
+.card:hover {
+    margin-right: 0px;
+}

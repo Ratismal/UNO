@@ -11,6 +11,13 @@
   "dependencies": {
     "cat-loggr": "^1.0.8",
     "eris": "^0.8.2",
-    "moment": "^2.22.2"
+    "eventemitter3": "^3.1.0",
+    "jsonwebtoken": "^8.3.0",
+    "koa": "^2.5.3",
+    "koa-router": "^7.4.0",
+    "koa-static": "^5.0.0",
+    "koa-websocket": "^5.0.1",
+    "moment": "^2.22.2",
+    "snekfetch": "^4.0.4"
   }
 }

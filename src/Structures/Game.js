@@ -221,6 +221,7 @@ module.exports = class Game {
             if (br) break;
         }
         for (const player of players) {
+            player.cardsChanged();
             player.called = false;
             if (cards[player.id].length > 0)
                 await this.notifyPlayer(player, cards[player.id]);
@@ -240,6 +241,7 @@ module.exports = class Game {
             player.hand.push(c);
             this.drawn++;
         }
+        player.cardsChanged();
         player.called = false;
         if (cards.length > 0)
             await this.notifyPlayer(player, cards.map(c => c.toString()));

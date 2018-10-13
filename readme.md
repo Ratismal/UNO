@@ -3,6 +3,13 @@
 The time you spent looking at this readme could have been spent being productive.  
 Readmes kill. Play UNO instead. UNO saves lives.
 
+## Table of Contents
+
+1. [Description](#description)
+2. [Configurable Rules](#configurable-rules)
+3. [Selfhosting](#selfhosting)
+4. [Disclaimer](#disclaimer)
+
 ## Description
 
 This is an UNO bot designed for the Discord chat platform. The intent of this bot is to provide a fun and fulfilling UNO experience with your friends!

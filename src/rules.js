@@ -43,11 +43,11 @@ module.exports.rules = {
     FALSE_CALLOUT_PENALTY: {
         desc: 'The number of cards to give someone for falsely calling someone out.',
         value: 2,
-        name: 'Callout Penalty',
+        name: 'False Callout Penalty',
         type: 'integer'
     },
     DRAW_AUTOPLAY: {
-        desc: 'Automatically plays a card after drawing, if possible. Will not autoplay wild cards.',
+        desc: 'Automatically plays a card after drawing, if possible. If a wild card is drawn, will give a prompt for color.',
         value: false,
         name: 'Automatically Play After Draw',
         type: 'boolean'

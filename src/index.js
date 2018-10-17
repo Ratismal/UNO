@@ -188,7 +188,8 @@ const timeoutTimer = setInterval(async () => {
                 }
                 await game.send(out);
             }
-        } catch {
+        } catch (err) {
+            console.error(err);
             delete games[id];
         }
     }

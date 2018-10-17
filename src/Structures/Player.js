@@ -122,16 +122,16 @@ module.exports = class Player extends EventEmitter {
     }
 
     async send(content) {
-        let chan = await this.member.user.getDMChannel();
-        await chan.createMessage(content);
+        try {
+            let chan = await this.member.user.getDMChannel();
+            await chan.createMessage(content);
+        } catch (err) {
+            await this.game.send(`Hey <@${this.id}>, I can't DM you! Please make sure your DMs are enabled, and run \`uno hand\` to see your cards.`);
+        }
     }
 
     async sendHand(turn = false) {
         this.sortHand();
-        try {
-            await this.send((turn ? "It's your turn! " : '') + 'Here is your hand:\n\n' + this.hand.map(h => `**${h}**`).join(' | ') + `\n\nYou currently have ${this.hand.length} card(s).`);
-        } catch (err) {
-            await this.game.send(`Hey <@${this.id}>, I can't DM you! Please make sure your DMs are enabled, and run \`uno hand\` to see your cards.`);
-        }
+        await this.send((turn ? "It's your turn! " : '') + 'Here is your hand:\n\n' + this.hand.map(h => `**${h}**`).join(' | ') + `\n\nYou currently have ${this.hand.length} card(s).`);
     }
 }

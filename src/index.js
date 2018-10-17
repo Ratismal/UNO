@@ -162,6 +162,11 @@ const timeoutTimer = setInterval(async () => {
     for (const id in games) {
         try {
             let game = games[id];
+            if (!game) {
+                console.info('Deleting non-existent game with id', id);
+                delete games[id];
+                continue;
+            }
             if (!game.started && (Date.now() - game.lastChange) >= 3 * 60 * 1000) {
                 await game.send(`The game has been cancelled due to inactivity.`);
                 delete games[id];

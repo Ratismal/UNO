@@ -21,7 +21,7 @@ module.exports = class Game {
 
     static deserialize(obj, client) {
         let channel = client.getChannel(obj.channel);
-        if (channel) return null;
+        if (!channel) return null;
         let game = new Game(client, channel);
         for (const id in obj.players) {
             game.players[id] = Player.deserialize(obj.players[id], game);

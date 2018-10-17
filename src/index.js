@@ -95,7 +95,8 @@ client.on('ready', () => {
     try {
         const currentGames = require('../current-games.json');
         for (const id in currentGames) {
-            games[id] = Game.deserialize(currentGames[id], client);
+            let game = Game.deserialize(currentGames[id], client);
+            if (game) games[id] = game;
         }
         console.info('Restored', Object.keys(currentGames).length, 'games.');
     } catch (err) {

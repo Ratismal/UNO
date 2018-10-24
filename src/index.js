@@ -138,7 +138,7 @@ client.on('shardDisconnect', (err, id) => {
 
 client.on('messageCreate', async (msg) => {
     if (!ready) return;
-    if (msg.user.bot) return;
+    if (msg.author.bot) return;
     if (queryCache[msg.channel.id] && queryCache[msg.channel.id][msg.author.id]) {
         queryCache[msg.channel.id][msg.author.id].resolve(msg);
         return delete queryCache[msg.channel.id][msg.author.id];

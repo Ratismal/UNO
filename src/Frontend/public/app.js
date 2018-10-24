@@ -1,7 +1,3 @@
-import { setInterval, clearInterval } from "timers";
-
-console.log(window.location.url);
-
 if (!localStorage.token) {
     window.location.replace("/login");
 }

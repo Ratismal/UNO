@@ -213,6 +213,7 @@ const commands = {
     async help(msg, words) {
         let out = `:sparkles: **__UNO Commands__** :sparkles:\n
 **${prefix.toUpperCase()} HELP** - Shows this message!
+**${prefix.toUpperCase()} SUPPORT** - Gets a link to my support guild!
 **${prefix.toUpperCase()} JOIN** - Joins (or creates) a game in the current channel!
 **${prefix.toUpperCase()} QUIT** - Quits the game! Party pooper.
 **${prefix.toUpperCase()} START** - Starts the game! Can only be used by the player who joined first.
@@ -247,6 +248,16 @@ You can execute up to two commands in a single message by separating them with \
             } else {
                 return 'You have joined the game! Please wait for it to start.';
             }
+        }
+    },
+    async support(msg, words) {
+        let chan = await client.getDMChannel(msg.author.id);
+        try {
+            await chan.createMessage('Here\'s a link to my support server: https://discord.gg/H8KADM4');
+            return 'Ok, I\'ve DMed you a link to my support server!';
+        } catch (err) {
+            console.log(err);
+            return 'Sorry, I wasn\'t able to DM you. Check if you have them open, and try again.';
         }
     },
     async quit(msg, words) {

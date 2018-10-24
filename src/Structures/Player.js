@@ -2,7 +2,6 @@ const Card = require('./Card');
 
 module.exports = class Player {
     constructor(member, game) {
-        super();
         this.member = member;
         this.game = game;
         this.id = member.id;

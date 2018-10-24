@@ -1,7 +1,6 @@
 const Card = require('./Card');
-const EventEmitter = require('eventemitter3');
 
-module.exports = class Player extends EventEmitter {
+module.exports = class Player {
     constructor(member, game) {
         super();
         this.member = member;
@@ -14,7 +13,12 @@ module.exports = class Player extends EventEmitter {
 
     cardsChanged() {
         this.sortHand();
-        this.emit('cardsChanged', this.hand);
+        this.game.client.wsEvent('cards', {
+            userId: this.id,
+            channelId: this.game.channel.id,
+            hand: this.hand
+        });
+        // this.emit('cardsChanged', this.hand);
     }
 
     static deserialize(obj, game) {
@@ -23,6 +27,8 @@ module.exports = class Player extends EventEmitter {
         player.called = obj.called;
         player.finished = obj.finished;
         player.hand = obj.hand.map(c => Card.deserialize(c));
+
+        player.cardsChanged();
 
         return player;
     }

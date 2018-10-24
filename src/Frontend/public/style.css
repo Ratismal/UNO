@@ -1,3 +1,7 @@
+html {
+    font-family: sans-serif;
+}
+
 section {
     max-width: 800px;
     margin: 0 auto;
@@ -17,4 +21,49 @@ section {
 
 .card:hover {
     margin-right: 0px;
+}
+
+h2 {
+    text-align: center;
+}
+
+#game-wrapper {
+    display: flex;
+    flex-direction: column;
+    margin: 0 auto;
+    max-width: 500px;
+}
+
+.button {
+    text-decoration: none;
+
+    display: block;
+    background: rgb(64, 228, 179);
+    padding: 10px;
+    border-radius: 5px;
+    color: white;
+
+    text-align: center;
+}
+
+.button:hover {
+    background: rgb(113, 240, 202);
+}
+
+.game {
+    display: flex;
+    align-items: center;
+
+    background: rgba(0, 0, 0, 0.1);
+    padding: 15px;
+    border-radius: 5px;
+}
+
+.game .game-header {
+    flex: 1 1 auto;
+    font-size: 1.5em;
+}
+
+.game .btn {
+    flex: 0 0 auto;
 }

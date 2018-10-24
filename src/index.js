@@ -51,6 +51,12 @@ class Client extends Eris.Client {
         return obj;
     }
 
+    wsEvent(code, data) {
+        if (this.frontend) {
+            this.frontend.emitToWebsocket(code, data);
+        }
+    }
+
     awaitQuery(channelId, userId, message) {
         return new Promise((res, rej) => {
             if (!queryCache[channelId]) queryCache[channelId] = {};
@@ -69,6 +75,7 @@ const client = new Client(config.token, conf);
 const prefix = config.prefix;
 
 const frontend = new Frontend(client);
+client.frontend = frontend;
 
 
 process.on('exit', code => {

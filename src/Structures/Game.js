@@ -36,6 +36,15 @@ module.exports = class Game {
         game.rules = obj.rules;
         game.timeStarted = obj.timeStarted || (obj.started ? Date.now() : null);
         game.drawn = obj.drawn || 0;
+
+        for (const id in game.players) {
+            game.client.wsEvent('gameStarted', {
+                userId: id,
+                chanId: game.channel.id,
+                channelName: game.channel.name
+            });
+        }
+
         return game;
     }
 
@@ -191,6 +200,14 @@ module.exports = class Game {
         d = d.join(', ');
 
         out += `\nThis game lasted **${d}**, and **${this.drawn}** cards were drawn!`;
+
+        for (const id in this.players) {
+            this.client.wsEvent('gameFinished', {
+                userId: id,
+                chanId: this.channel.id,
+                channelName: this.channel.name
+            });
+        }
         return out;
     }
 
@@ -201,6 +218,14 @@ module.exports = class Game {
         await this.dealAll(this.rules.INITIAL_CARDS);
         this.started = true;
         this.timeStarted = Date.now();
+
+        for (const id in this.players) {
+            this.client.wsEvent('gameStarted', {
+                userId: id,
+                chanId: this.channel.id,
+                channelName: this.channel.name
+            });
+        }
     }
 
     async dealAll(number, players = this.queue) {

@@ -46,23 +46,30 @@ class WsMethods {
         }
     }
 
+    async method_requestGames(ctx, data) {
+        let games = Object.values(this.client.games).filter(g => {
+            return g.players[ctx.userId];
+        });
+        this.send(ctx, {
+            code: 'games',
+            games: games.map(g => ({ channelId: g.channel.id, channelName: g.channel.name }))
+        })
+    }
+
     async method_channel(ctx, data) {
         let channel = data.channel;
         ctx.channelId = data.channel;
-        console.log(channel, ctx.userId);
         let game = this.client.games[channel];
         if (game) {
             let player = game.players[ctx.userId];
             if (player) {
-                let func = hand => {
-                    this.send(ctx, {
-                        code: 'cards', cards: hand
-                    });
-                };
-                ctx.cardFunc = func;
                 player.sortHand();
-                player.on('cardsChanged', func);
-                await this.send(ctx, { code: 'cards', cards: player.hand });
+                await this.send(ctx, {
+                    code: 'cards',
+                    hand: player.hand,
+                    userId: ctx.userId,
+                    channelId: ctx.channelId
+                });
             } else this.send(ctx, {
                 code: 'error', message: 'You aren\'t part of this game.'
             });
@@ -153,21 +160,18 @@ module.exports = class Frontend {
 
         this.wsRouter = new Router();
 
+        this.conns = [];
+
         this.wsRouter.get('/uno', async (ctx, next) => {
+            this.conns.push(ctx);
+            ctx.userId = null;
+            ctx.channelId = null;
             ctx.websocket.send(JSON.stringify({ code: 'hello' }));
             ctx.websocket.on('message', async message => await this.handleMessage(ctx, message));
 
             ctx.websocket.on('close', async () => {
                 console.log('Websocket closed.');
-                if (ctx.channelId) {
-                    let game = this.client.games[ctx.channelId];
-                    if (game) {
-                        let player = game.players[ctx.userId];
-                        if (player) {
-                            player.off('cardsChanged', ctx.func);
-                        }
-                    }
-                }
+                this.conns.splice(this.conns.indexOf(ctx), 1);
             })
         })
 
@@ -177,6 +181,18 @@ module.exports = class Frontend {
 
         this.app.listen(8108);
         console.info('Website listening on port 8108');
+    }
+
+    async emitToWebsocket(code, data) {
+        let datum = { code, ...data };
+        let connections = this.conns;
+
+        if (datum.userId)
+            connections = connections.filter(ctx => ctx.userId === datum.userId);
+        if (datum.channelId)
+            connections = connections.filter(ctx => ctx.channelId === datum.channelId);
+
+        connections.forEach(ctx => this.wsMethods.send(ctx, datum));
     }
 
     async handleMessage(ctx, message) {

@@ -89,7 +89,10 @@ module.exports = class Player {
             id = words[1];
         }
         let wild = ['WILD', 'WILD+4'];
-        let alias = { 'W': 'WILD', 'W+4': 'WILD+4' };
+        let alias = {
+            'W': 'WILD', 'W+4': 'WILD+4', 'REV': 'REVERSE',
+            'R': 'REVERSE', 'NOU': 'REVERSE', 'S': 'SKIP'
+        };
 
         let _color = this.parseColor(color);
         if (!_color) {

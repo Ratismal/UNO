@@ -301,6 +301,7 @@ module.exports = class Game {
     shuffleDeck() {
         let top = this.discard.pop();
         var j, x, i, a = [].concat(this.deck, this.discard);
+        this.discard = [];
         if (a.length > 0)
             for (i = a.length - 1; i > 0; i--) {
                 j = Math.floor(Math.random() * (i + 1));

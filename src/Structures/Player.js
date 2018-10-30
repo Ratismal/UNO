@@ -10,6 +10,7 @@ module.exports = class Player extends EventEmitter {
         this.hand = [];
         this.called = false;
         this.finished = false;
+        this.cardsPlayed = 0;
     }
 
     cardsChanged() {
@@ -23,6 +24,7 @@ module.exports = class Player extends EventEmitter {
         player.called = obj.called;
         player.finished = obj.finished;
         player.hand = obj.hand.map(c => Card.deserialize(c));
+        player.cardsPlayed = obj.cardsPlayed || 0;
 
         return player;
     }
@@ -32,7 +34,8 @@ module.exports = class Player extends EventEmitter {
             id: this.id,
             hand: this.hand.map(c => c.serialize()),
             called: this.called,
-            finished: this.finished
+            finished: this.finished,
+            cardsPlayed: this.cardsPlayed
         };
 
         return obj;

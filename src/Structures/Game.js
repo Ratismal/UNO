@@ -178,7 +178,8 @@ module.exports = class Game {
     scoreboard() {
         let out = 'The game is now over. Thanks for playing! Here is the scoreboard:\n';
         for (let i = 0; i < this.finished.length; i++) {
-            out += `${i + 1}. **${this.finished[i].member.user.username}**\n`;
+            let user = this.finished[i].member.user;
+            out += `${i + 1}. **${user.username}#${user.discriminator}**\n`;
         }
         let diff = moment.duration(moment() - this.timeStarted);
         let d = [];
@@ -191,6 +192,22 @@ module.exports = class Game {
         d = d.join(', ');
 
         out += `\nThis game lasted **${d}**, and **${this.drawn}** cards were drawn!`;
+
+        if (this.rules.OUTPUT_SCORE) {
+            let finished = this.finished;
+            let channel = this.channel;
+            setTimeout(async () => {
+                await channel.createMessage('Here\'s the score from the latest game:', {
+                    file: JSON.stringify(finished.map(p => ({
+                        id: p.id,
+                        cardsPlayed: p.cardsPlayed,
+                        name: p.member.user.username,
+                        discriminator: p.member.user.discriminator
+                    }))),
+                    name: 'score.json'
+                });
+            }, 1000);
+        }
         return out;
     }
 

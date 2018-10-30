@@ -8,7 +8,7 @@ const { Game, Player, Card } = require('./Structures');
 const Frontend = require('./Frontend');
 
 let conf = {
-    getAllUsers: true, maxShards: config.maxShards || 6
+    getAllUsers: true, maxShards: 8
 };
 if (config.shard) {
     conf.firstShardID = config.shard;
@@ -307,6 +307,8 @@ You can execute up to two commands in a single message by separating them with \
             if (card === null) return;
             if (!card) return "It doesn't seem like you have that card! Try again.";
 
+            game.player.cardsPlayed++;
+
             if (!game.flipped.color || card.wild || card.id === game.flipped.id || card.color === game.flipped.color) {
                 game.discard.push(card);
                 game.player.hand.splice(game.player.hand.indexOf(card), 1);
@@ -496,7 +498,7 @@ You can execute up to two commands in a single message by separating them with \
     },
     async callout(msg, words) {
         let game = games[msg.channel.id];
-        if (game && game.started && game.players[msg.author.id]) {
+        if (game && game.started && game.players[msg.author.id] && !game.players[msg.author.id].finished) {
             if (game.rules.CALLOUTS === false) return 'Callouts have been disabled for this game.';
             let baddies = [];
             for (const player of game.queue) {

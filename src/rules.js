@@ -61,7 +61,6 @@ module.exports.rules = {
     },
     OUTPUT_SCORE: {
         desc: 'Output the game\'s score as a JSON file after the game.',
-        wip: true,
         value: false,
         name: 'Output Scores',
         type: 'boolean'

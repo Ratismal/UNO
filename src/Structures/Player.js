@@ -1,9 +1,7 @@
 const Card = require('./Card');
-const EventEmitter = require('eventemitter3');
 
-module.exports = class Player extends EventEmitter {
+module.exports = class Player {
     constructor(member, game) {
-        super();
         this.member = member;
         this.game = game;
         this.id = member.id;
@@ -15,7 +13,12 @@ module.exports = class Player extends EventEmitter {
 
     cardsChanged() {
         this.sortHand();
-        this.emit('cardsChanged', this.hand);
+        this.game.client.wsEvent('cards', {
+            userId: this.id,
+            channelId: this.game.channel.id,
+            hand: this.hand
+        });
+        // this.emit('cardsChanged', this.hand);
     }
 
     static deserialize(obj, game) {
@@ -25,6 +28,8 @@ module.exports = class Player extends EventEmitter {
         player.finished = obj.finished;
         player.hand = obj.hand.map(c => Card.deserialize(c));
         player.cardsPlayed = obj.cardsPlayed || 0;
+
+        player.cardsChanged();
 
         return player;
     }
@@ -87,7 +92,10 @@ module.exports = class Player extends EventEmitter {
             id = words[1];
         }
         let wild = ['WILD', 'WILD+4'];
-        let alias = { 'W': 'WILD', 'W+4': 'WILD+4' };
+        let alias = {
+            'W': 'WILD', 'W+4': 'WILD+4', 'REV': 'REVERSE',
+            'R': 'REVERSE', 'NOU': 'REVERSE', 'S': 'SKIP'
+        };
 
         let _color = this.parseColor(color);
         if (!_color) {

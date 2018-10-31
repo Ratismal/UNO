@@ -77,6 +77,15 @@ module.exports = class Player {
         return color;
     }
 
+    outputFormat() {
+        return {
+            id: this.id,
+            cardsPlayed: this.cardsPlayed,
+            name: this.member.user.username,
+            discriminator: this.member.user.discriminator
+        };
+    }
+
     async getCard(words) {
         let color, id;
         if (words.length === 1) {

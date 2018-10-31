@@ -65,7 +65,6 @@ module.exports.rules = {
         name: 'Output Scores',
         type: 'boolean'
     }
-
 };
 
 module.exports.ruleKeys = Object.keys(module.exports.rules);

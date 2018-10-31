@@ -266,6 +266,7 @@ You can execute up to two commands in a single message by separating them with \
 
             let out = 'You are no longer participating in the game.\n\n';
 
+            game.dropped.push(game.players[msg.author.id]);
             if (game.started && game.queue.length <= 2) {
                 game.queue = game.queue.filter(p => p.id !== msg.author.id);
                 game.finished.push(game.queue[0]);

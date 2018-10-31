@@ -11,6 +11,7 @@ module.exports = class Game {
         this.deck = [];
         this.discard = [];
         this.finished = [];
+        this.dropped = [];
         this.started = false;
         this.confirm = false;
         this.lastChange = Date.now();
@@ -30,6 +31,7 @@ module.exports = class Game {
         game.deck = obj.deck.map(c => Card.deserialize(c));
         game.discard = obj.discard.map(c => Card.deserialize(c));
         game.finished = obj.finished.map(p => game.players[p]);
+        game.dropped = obj.dropped.map(p => game.players[p]);
         game.started = obj.started;
         game.confirm = obj.confirm;
         game.lastChange = Date.now(); // set to current date to account for potential downtime
@@ -56,6 +58,7 @@ module.exports = class Game {
             deck: this.deck.map(c => c.serialize()),
             discard: this.discard.map(c => c.serialize()),
             finished: this.finished.map(p => p.id),
+            dropped: this.dropped.map(p => p.id),
             started: this.started,
             confirm: this.confirm,
             lastChange: Date.now(),
@@ -204,15 +207,14 @@ module.exports = class Game {
 
         if (this.rules.OUTPUT_SCORE) {
             let finished = this.finished;
+            let dropped = this.dropped;
             let channel = this.channel;
             setTimeout(async () => {
                 await channel.createMessage('Here\'s the score from the latest game:', {
-                    file: JSON.stringify(finished.map(p => ({
-                        id: p.id,
-                        cardsPlayed: p.cardsPlayed,
-                        name: p.member.user.username,
-                        discriminator: p.member.user.discriminator
-                    }))),
+                    file: JSON.stringify({
+                        finished: finished.map(p => p.outputFormat()),
+                        quit: dropped.map(p => p.outputFormat())
+                    }),
                     name: 'score.json'
                 });
             }, 1000);

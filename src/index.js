@@ -122,9 +122,9 @@ client.on('warn', msg => {
     console.error(msg);
 });
 
-client.on('debug', msg => {
-    console.log(msg);
-});
+// client.on('debug', msg => {
+//     console.log(msg);
+// });
 
 client.on('connect', id => {
     console.log('Shard', id, 'has connected');

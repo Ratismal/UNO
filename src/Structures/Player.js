@@ -100,6 +100,10 @@ module.exports = class Player {
             color = words[0];
             id = words[1];
         }
+        if (!id) {
+            await this.game.send('Something went wrong. Did you provide a proper card?');
+            return null;
+        }
         let wild = ['WILD', 'WILD+4'];
         let alias = {
             'W': 'WILD', 'W+4': 'WILD+4', 'REV': 'REVERSE',

@@ -368,7 +368,7 @@ You can execute up to two commands in a single message by separating them with \
                 where: {
                     id: msg.channel.id
                 }
-            });
+            })[0];
             let game = new Game(client, msg.channel);
             await game.init();
             if (words.length === 0) {

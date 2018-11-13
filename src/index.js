@@ -97,13 +97,13 @@ client.frontend = frontend;
 
 
 process.on('exit', code => {
-    console.info('Exiting! Serializing current games...');
-    let inProgress = {};
-    for (const id in games) {
-        inProgress[id] = games[id].serialize();
-    }
-    console.info('Serialized', Object.keys(inProgress).length, 'games! Saving...');
-    fs.writeFileSync(path.join(__dirname, '..', 'current-games.json'), JSON.stringify(inProgress, null, 2), { encoding: 'utf8' });
+    // console.info('Exiting! Serializing current games...');
+    // let inProgress = {};
+    // for (const id in games) {
+    //     inProgress[id] = games[id].serialize();
+    // }
+    // console.info('Serialized', Object.keys(inProgress).length, 'games! Saving...');
+    // fs.writeFileSync(path.join(__dirname, '..', 'current-games.json'), JSON.stringify(inProgress, null, 2), { encoding: 'utf8' });
 });
 
 process.on('unhandledRejection', error => {
@@ -127,6 +127,7 @@ client.on('ready', async () => {
             if (channel.game) {
                 let game = Game.deserialize(channel.game, client);
                 if (game) games[channel.id] = game;
+                await client.createMessage(channel.id, 'A game has been restored in this channel.');
             }
         }
         // const currentGames = require('../current-games.json');
@@ -275,6 +276,19 @@ const commands = {
 You can execute up to two commands in a single message by separating them with \`&&\`!`;
 
         return out;
+    },
+    async restart(msg, words) {
+        if (msg.author.id === '103347843934212096') {
+            for (const id in games) {
+                let game = games[id];
+                await db.channel.upsert({
+                    id: game.channel.id,
+                    game: game.serialize()
+                });
+                await client.createMessage(id, 'The bot is being restarted, so there will be a brief downtime. Don\'t worry though, your game has been saved!');
+            }
+            process.exit();
+        }
     },
     async join(msg, words) {
         let game = games[msg.channel.id];

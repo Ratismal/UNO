@@ -133,7 +133,7 @@ module.exports = class Player {
             }
         }
         color = _color;
-        console.log(color, id);
+        console.log('Getting card:', color, id);
         if (alias[id.toUpperCase()]) id = alias[id.toUpperCase()];
         if (['WILD', 'WILD+4'].includes(id.toUpperCase())) {
             let card = this.hand.find(c => c.id === id.toUpperCase());

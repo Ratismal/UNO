@@ -14,7 +14,8 @@ module.exports.rules = {
         value: 7,
         name: 'Initial Cards',
         type: 'integer',
-        min: 1
+        min: 1,
+        max: 5000
     },
     DRAW_SKIP: {
         desc: 'Whether pickup cards (+2, +4) should also skip the next person\'s turn.',
@@ -38,13 +39,15 @@ module.exports.rules = {
         desc: 'The number of cards to give someone when called out.',
         value: 2,
         name: 'Callout Penalty',
-        type: 'integer'
+        type: 'integer',
+        max: 1000
     },
     FALSE_CALLOUT_PENALTY: {
         desc: 'The number of cards to give someone for falsely calling someone out.',
         value: 2,
         name: 'False Callout Penalty',
-        type: 'integer'
+        type: 'integer',
+        max: 1000
     },
     DRAW_AUTOPLAY: {
         desc: 'Automatically plays a card after drawing, if possible. If a wild card is drawn, will give a prompt for color.',

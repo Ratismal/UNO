@@ -527,7 +527,7 @@ You can execute up to two commands in a single message by separating them with \
                 }
             }
             game.dealAll(Math.max(1, game.rules.CALLOUT_PENALTY), baddies);
-            console.log(baddies);
+            console.log('Called Out Players:', baddies);
             if (baddies.length > 0)
                 return `Uh oh! ${baddies.map(p => `**${p.member.user.username}**`).join(', ')}, you didn't say UNO! Pick up ${Math.max(1, game.rules.CALLOUT_PENALTY)}!`;
             else {

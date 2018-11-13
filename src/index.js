@@ -1,11 +1,27 @@
 const config = require('../config.json');
 const CatLoggr = require('cat-loggr');
-const loggr = new CatLoggr().setGlobal();
+
+const loggr = new CatLoggr({
+    level: 'debug',
+    levels: [
+        { name: 'fatal', color: CatLoggr._chalk.red.bgBlack, err: true },
+        { name: 'error', color: CatLoggr._chalk.black.bgRed, err: true },
+        { name: 'warn', color: CatLoggr._chalk.black.bgYellow, err: true },
+        { name: 'trace', color: CatLoggr._chalk.green.bgBlack, trace: true },
+        { name: 'info', color: CatLoggr._chalk.black.bgGreen },
+        { name: 'verbose', color: CatLoggr._chalk.black.bgCyan },
+        { name: 'debug', color: CatLoggr._chalk.magenta.bgBlack, aliases: ['log', 'dir'] },
+        { name: 'database', color: CatLoggr._chalk.green.bgBlack }
+    ]
+}).setGlobal();
+
 const Eris = require('eris');
 const fs = require('fs'), path = require('path');
 const moment = require('moment');
 const { Game, Player, Card } = require('./Structures');
 const Frontend = require('./Frontend');
+const Sequelize = require('sequelize');
+const db = require('../models');
 
 let conf = {
     getAllUsers: true, maxShards: 8
@@ -25,6 +41,8 @@ let ready = false;
 class Client extends Eris.Client {
     constructor(...args) {
         super(...args);
+
+        this.db = db;
     }
 
     get config() {
@@ -95,17 +113,28 @@ process.on('unhandledRejection', error => {
 
 let globalGame;
 
-client.on('ready', () => {
+client.on('ready', async () => {
     console.log('ready!');
 
     console.info('Attemting to load in-progress games...');
     try {
-        const currentGames = require('../current-games.json');
-        for (const id in currentGames) {
-            let game = Game.deserialize(currentGames[id], client);
-            if (game) games[id] = game;
+        const channels = await db.channel.findAll({
+            where: {
+                game: { [Sequelize.Op.ne]: null }
+            }
+        });
+        for (const channel of channels) {
+            if (channel.game) {
+                let game = Game.deserialize(channel.game, client);
+                if (game) games[channel.id] = game;
+            }
         }
-        console.info('Restored', Object.keys(currentGames).length, 'games.');
+        // const currentGames = require('../current-games.json');
+        // for (const id in currentGames) {
+        //     let game = Game.deserialize(currentGames[id], client);
+        //     if (game) games[id] = game;
+        // }
+        console.info('Restored', channels.length, 'games.');
     } catch (err) {
         console.error('Issue restoring old games:', err);
     }
@@ -167,18 +196,36 @@ client.on('messageCreate', async (msg) => {
     }
 });
 
+async function deleteGame(id) {
+    delete games[id];
+    let channel = await db.channel.findByPk(id);
+    await channel.update({
+        game: null
+    });
+};
+
+const saveGameTimer = setInterval(async () => {
+    for (const id in games) {
+        let game = games[id];
+        await db.channel.upsert({
+            id: game.channel.id,
+            game: game.serialize()
+        })
+    }
+}, 1000 * 60);
+
 const timeoutTimer = setInterval(async () => {
     for (const id in games) {
         try {
             let game = games[id];
             if (!game) {
                 console.info('Deleting non-existent game with id', id);
-                delete games[id];
+                deleteGame(id);
                 continue;
             }
             if (!game.started && (Date.now() - game.lastChange) >= 3 * 60 * 1000) {
                 await game.send(`The game has been cancelled due to inactivity.`);
-                delete games[id];
+                deleteGame(id);
             } else if (game.started && (Date.now() - game.lastChange) >= 5 * 60 * 1000) {
                 let user = game.queue[0].member.user;
                 let msg = { author: user, channel: { id } };
@@ -198,13 +245,13 @@ const timeoutTimer = setInterval(async () => {
                     if (typeof out === 'string')
                         out += `\nThe game has been cancelled due to no remaining players.`;
                     else out.embed.description += `\nThe game has been cancelled due to no remaining players.`;
-                    delete games[id];
+                    deleteGame(id);
                 }
                 await game.send(out);
             }
         } catch (err) {
             console.error(err);
-            delete games[id];
+            deleteGame(id);
         }
     }
 }, 1000 * 30);
@@ -233,6 +280,7 @@ You can execute up to two commands in a single message by separating them with \
         let game = games[msg.channel.id];
         if (!game) {
             game = games[msg.channel.id] = new Game(client, msg.channel);
+            await game.init();
         }
         if (game.started) {
             return 'Sorry, this game has already started!';
@@ -271,7 +319,7 @@ You can execute up to two commands in a single message by separating them with \
                 game.queue = game.queue.filter(p => p.id !== msg.author.id);
                 game.finished.push(game.queue[0]);
                 out += game.scoreboard();
-                delete games[game.channel.id];
+                deleteGame(game.channel.id);
                 return out;
             }
             if (game.started && game.player.member.id === msg.author.id) {
@@ -302,14 +350,25 @@ You can execute up to two commands in a single message by separating them with \
                 }
             }
         } else {
+            let channel = await db.channel.findByPk(msg.channel.id);
+            let game = new Game(client, msg.channel);
+            await game.init();
             if (words.length === 0) {
-                return globalGame.serializeRules();
+                return game.serializeRules();
             } else if (words.length === 1) {
-                return globalGame.serializeRule(words[0]);
+                return game.serializeRule(words[0]);
             } else {
-                return 'No game has been started yet, so you can\'t set rules.';
+                let perms = msg.channel.permissionsOf(msg.author.id);
+                if (perms.has('manageMessages')) {
+                    let res = game.setRule(words);
+                    await channel.update({
+                        rules: game.rules
+                    });
+                    return res === true ? 'The global rules have been updated!' + game.serializeRules() : 'Nothing has changed: ' + res;
+                } else {
+                    return 'You do not have manage messages, so you cannot set global rules.';
+                }
             }
-
         }
     },
     async p(msg, words) { return await commands.play(msg, words); },
@@ -340,7 +399,7 @@ You can execute up to two commands in a single message by separating them with \
                     if (2 === game.queue.length) {
                         game.finished.push(game.queue[1]);
                         pref = game.scoreboard();
-                        delete games[game.channel.id];
+                        deleteGame(game.channel.id);
                         return pref;
 
                     }

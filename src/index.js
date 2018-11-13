@@ -365,6 +365,7 @@ You can execute up to two commands in a single message by separating them with \
             }
         } else {
             let channel = await db.channel.findByPk(msg.channel.id);
+            if (!channel) await db.channel.create({ id: msg.channel.id });
             let game = new Game(client, msg.channel);
             await game.init();
             if (words.length === 0) {

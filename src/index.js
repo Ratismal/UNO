@@ -364,11 +364,11 @@ You can execute up to two commands in a single message by separating them with \
                 }
             }
         } else {
-            let channel = await db.channel.findOrCreate({
+            let channel = (await db.channel.findOrCreate({
                 where: {
                     id: msg.channel.id
                 }
-            })[0];
+            }))[0];
             let game = new Game(client, msg.channel);
             await game.init();
             if (words.length === 0) {

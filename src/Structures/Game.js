@@ -23,7 +23,10 @@ module.exports = class Game {
     async init() {
         let channel = await this.client.db.channel.findByPk(this.channel.id);
         if (channel && channel.rules) {
-            this.rules = channel.rules;
+            this.rules = {
+                ...this.client.ruleset,
+                ...channel.rules
+            };
         }
     }
 

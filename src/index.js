@@ -342,6 +342,10 @@ You can execute up to two commands in a single message by separating them with \
             }
             delete game.players[msg.author.id];
             game.queue = game.queue.filter(p => p.id !== msg.author.id);
+            if (!game.started, game.queue.length === 0) {
+                out = 'The game has been cancelled.';
+                deleteGame(game.channel.id);
+            }
             return out;
         } else return 'You haven\'t joined!';
     },
@@ -426,11 +430,15 @@ You can execute up to two commands in a single message by separating them with \
                 let extra = '';
                 switch (card.id) {
                     case 'REVERSE':
-                        if (game.queue.length >= 2) {
+                        if (game.queue.length > 2) {
                             let player = game.queue.shift();
                             game.queue.reverse();
                             game.queue.unshift(player);
                             extra = `Turns are now in reverse order! `;
+                            break;
+                        } else if (game.rules.REVERSE_SKIP === true) {
+                            game.queue.push(game.queue.shift());
+                            extra = `Sorry, ${game.player.member.user.username}! Skip a turn! `;
                             break;
                         }
                     case 'SKIP':

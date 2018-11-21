@@ -23,6 +23,12 @@ module.exports.rules = {
         name: 'Draws Skip',
         type: 'boolean'
     },
+    REVERSE_SKIP: {
+        desc: 'Whether reverse cards skip turns when there\'s only two players left.',
+        value: true,
+        name: 'Reverses Skip',
+        type: 'boolean'
+    },
     MUST_PLAY: {
         desc: 'Whether someone must play a card if they are able to.',
         value: false,

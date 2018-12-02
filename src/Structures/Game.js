@@ -20,6 +20,16 @@ module.exports = class Game {
         this.rules = client.ruleset;
     }
 
+    async init() {
+        let channel = await this.client.db.channel.findByPk(this.channel.id);
+        if (channel && channel.rules) {
+            this.rules = {
+                ...this.client.ruleset,
+                ...channel.rules
+            };
+        }
+    }
+
     static deserialize(obj, client) {
         let channel = client.getChannel(obj.channel);
         if (!channel) return null;

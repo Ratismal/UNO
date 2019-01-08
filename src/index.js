@@ -562,6 +562,7 @@ You can execute up to two commands in a single message by separating them with \
     async invite(msg, words) {
         return '<https://discordapp.com/oauth2/authorize?client_id=403419413904228352&scope=bot&permissions=0>';
     },
+    async info(msg, words) { return await commands.stats(msg, words); },
     async stats(msg, words) {
         var memory = process.memoryUsage();
         return {
@@ -569,7 +570,8 @@ You can execute up to two commands in a single message by separating them with \
                 fields: [
                     { name: 'RAM', value: memory.rss / 1024 / 1024 + 'MiB', inline: true },
                     { name: 'Guilds', value: client.guilds.size, inline: true },
-                    { name: 'Games In Progress', value: Object.keys(games).length, inline: true }
+                    { name: 'Games In Progress', value: Object.keys(games).length, inline: true },
+                    { name: 'Holiday Card Designers', inline: false, value: 'Fubar#1972' }
                 ]
             }
         };

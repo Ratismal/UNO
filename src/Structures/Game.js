@@ -247,10 +247,10 @@ module.exports = class Game {
         return out;
     }
 
-    log(type, player = 'SYSTEM', context = {}) {
+    log(type, player, context = {}) {
         this.transcript.push({
             type: type.toUpperCase(),
-            player,
+            player: player || 'SYSTEM',
             ...context
         });
     }

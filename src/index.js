@@ -327,6 +327,7 @@ You can execute up to two commands in a single message by separating them with \
         if (game && game.players.hasOwnProperty(msg.author.id)) {
 
             let out = 'You are no longer participating in the game.\n\n';
+            game.log('quit', msg.author.id);
 
             game.dropped.push(game.players[msg.author.id]);
             if (game.started && game.queue.length <= 2) {
@@ -410,13 +411,19 @@ You can execute up to two commands in a single message by separating them with \
             game.player.cardsPlayed++;
 
             if (!game.flipped.color || card.wild || card.id === game.flipped.id || card.color === game.flipped.color) {
+
                 game.discard.push(card);
                 game.player.hand.splice(game.player.hand.indexOf(card), 1);
                 game.player.cardsChanged();
+
+                game.log('play', msg.author.id, { card: card.toString(), remaining: game.player.hand.length });
+
                 let pref = '';
                 if (game.player.hand.length === 0) {
                     game.finished.push(game.player);
                     game.player.finished = true;
+                    game.log('finished', msg.author.id, { rank: game.finished.length });
+
                     pref = `${game.player.member.user.username} has no more cards! They finished in **Rank #${game.finished.length}**! :tada:\n\n`;
                     if (2 === game.queue.length) {
                         game.finished.push(game.queue[1]);
@@ -435,14 +442,20 @@ You can execute up to two commands in a single message by separating them with \
                             game.queue.reverse();
                             game.queue.unshift(player);
                             extra = `Turns are now in reverse order! `;
+                            game.log('reverse', msg.author.id);
                             break;
                         } else if (game.rules.REVERSE_SKIP === true) {
-                            game.queue.push(game.queue.shift());
+                            let skipped = game.queue.shift();
+                            game.queue.push(skipped);
+                            game.log('skip', msg.author.id, { target: game.queue[0].id });
                             extra = `Sorry, ${game.player.member.user.username}! Skip a turn! `;
                             break;
                         }
                     case 'SKIP':
-                        game.queue.push(game.queue.shift());
+                        let skipped = game.queue.shift();
+                        game.queue.push(skipped);
+                        game.log('skip', msg.author.id, { target: game.queue[0].id });
+
                         extra = `Sorry, ${game.player.member.user.username}! Skip a turn! `;
                         break;
                     case '+2':
@@ -452,24 +465,32 @@ You can execute up to two commands in a single message by separating them with \
                                 amount += 2;
                             else break;
                         }
+                        game.log('pickup', msg.author.id, { target: game.queue[1].id, amount });
                         game.deal(game.queue[1], amount);
                         extra = `${game.queue[1].member.user.username} picks up ${amount} cards! Tough break. `;
                         if (game.rules.DRAW_SKIP === true) {
                             extra += ' Also, skip a turn!';
                             game.queue.push(game.queue.shift());
+                            game.log('skip', msg.author.id, { target: game.queue[0].id });
                         }
                         break;
                     case 'WILD':
+                        game.log('color_change', msg.author.id, { color: card.colorName });
                         extra = `In case you missed it, the current color is now **${card.colorName}**! `;
                         break;
                     case 'WILD+4': {
+                        game.log('color_change', msg.author.id, { color: card.colorName });
+                        game.log('pickup', msg.author.id, { target: game.queue[1].id, amount: 4 });
                         // let player = game.queue.shift();
                         await game.deal(game.queue[1], 4);
+
                         // game.queue.unshift(player);
                         extra = `${game.queue[1].member.user.username} picks up 4! The current color is now **${card.colorName}**! `;
                         if (game.rules.DRAW_SKIP === true) {
                             extra += ' Also, skip a turn!';
-                            game.queue.push(game.queue.shift());
+                            let skipped = game.queue.shift();
+                            game.queue.push(skipped);
+                            game.log('skip', msg.author.id, { target: game.queue[0].id });
                         }
                         break;
                     }
@@ -525,6 +546,8 @@ You can execute up to two commands in a single message by separating them with \
             return "A game isn't running right now.";
 
         if (game.queue.length > 1) {
+            if (game.started) return 'The game has already started!';
+
             if (game.player.id !== msg.author.id)
                 return "Sorry, but you can't start a game you didn't create!";
             await game.start();
@@ -594,6 +617,7 @@ You can execute up to two commands in a single message by separating them with \
         let game = games[msg.channel.id];
         if (game && game.started && game.players[msg.author.id] && game.players[msg.author.id].hand.length === 1) {
             let p = game.players[msg.author.id];
+            game.log('uno', msg.author.id);
             if (!p.called) {
                 p.called = true;
                 return `**UNO!!** ${p.member.user.username} only has one card left!`;
@@ -611,6 +635,8 @@ You can execute up to two commands in a single message by separating them with \
                     player.called = true;
                 }
             }
+            game.log('callout', msg.author.id, { targets: baddies.map(p => p.id) });
+
             game.dealAll(Math.max(1, game.rules.CALLOUT_PENALTY), baddies);
             console.log('Called Out Players:', baddies);
             if (baddies.length > 0)

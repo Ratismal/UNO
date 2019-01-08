@@ -18,6 +18,7 @@ module.exports = class Game {
         this.drawn = 0;
         this.timeStarted = null;
         this.rules = client.ruleset;
+        this.transcript = [];
     }
 
     async init() {
@@ -48,6 +49,7 @@ module.exports = class Game {
         game.rules = obj.rules;
         game.timeStarted = obj.timeStarted || (obj.started ? Date.now() : null);
         game.drawn = obj.drawn || 0;
+        game.transcript = obj.transcript || [];
 
         for (const id in game.players) {
             game.client.wsEvent('gameStarted', {
@@ -74,7 +76,8 @@ module.exports = class Game {
             lastChange: Date.now(),
             rules: this.rules,
             timeStarted: this.timeStarted,
-            drawn: this.drawn
+            drawn: this.drawn,
+            transcript: this.transcript
         };
         for (const id in this.players) {
             obj.players[id] = this.players[id].serialize();
@@ -212,6 +215,7 @@ module.exports = class Game {
             d[d.length - 1] = 'and ' + d[d.length - 1];
         }
         d = d.join(', ');
+        this.log('finish');
 
         out += `\nThis game lasted **${d}**, and **${this.drawn}** cards were drawn!`;
 
@@ -220,11 +224,13 @@ module.exports = class Game {
             let dropped = this.dropped;
             let channel = this.channel;
             setTimeout(async () => {
+                let file = {
+                    finished: finished.map(p => p.outputFormat()),
+                    quit: dropped.map(p => p.outputFormat()),
+                };
+                if (this.rules.TRANSCRIPT) file.transcript = this.transcript;
                 await channel.createMessage('Here\'s the score from the latest game:', {
-                    file: JSON.stringify({
-                        finished: finished.map(p => p.outputFormat()),
-                        quit: dropped.map(p => p.outputFormat())
-                    }),
+                    file: JSON.stringify(file),
                     name: 'score.json'
                 });
             }, 1000);
@@ -237,10 +243,22 @@ module.exports = class Game {
                 channelName: this.channel.name
             });
         }
+
         return out;
     }
 
+    log(type, player = 'SYSTEM', context = {}) {
+        this.transcript.push({
+            type: type.toUpperCase(),
+            player,
+            ...context
+        });
+    }
+
     async start() {
+        this.log('start', null, {
+            players: this.queue.map(p => p.id)
+        });
         this.generateDeck();
 
         this.discard.push(this.deck.pop());
@@ -278,9 +296,13 @@ module.exports = class Game {
         for (const player of players) {
             player.cardsChanged();
             player.called = false;
-            if (cards[player.id].length > 0)
+            if (cards[player.id].length > 0) {
                 await this.notifyPlayer(player, cards[player.id]);
-
+                this.log('draw', player.id, {
+                    count: cards[player.id].length,
+                    cards: cards[player.id].map(c => c.toString())
+                });
+            }
         }
     }
 
@@ -298,9 +320,13 @@ module.exports = class Game {
         }
         player.cardsChanged();
         player.called = false;
-        if (cards.length > 0)
+        if (cards.length > 0) {
             await this.notifyPlayer(player, cards.map(c => c.toString()));
-
+            this.log('draw', player.id, {
+                count: cards.length,
+                cards: cards.map(c => c.toString())
+            });
+        }
         return cards;
     }
 
@@ -344,5 +370,6 @@ module.exports = class Game {
         if (top)
             this.discard.push(top);
         this.send('*Thfwwp!* The deck has been shuffled.');
+        this.log('shuffle', null, { total: this.deck.length });
     }
 }

@@ -73,6 +73,12 @@ module.exports.rules = {
         value: false,
         name: 'Output Scores',
         type: 'boolean'
+    },
+    TRANSCRIPT: {
+        desc: 'Output the game\'s transcript as a JSON file after the game. Requires OUTPUT_SCORES to be enabled.',
+        value: false,
+        name: 'Transcript',
+        type: 'boolean'
     }
 };
 

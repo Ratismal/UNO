@@ -124,15 +124,17 @@ client.on('ready', async () => {
             }
         });
         for (const channel of channels) {
-            if (channel.game) {
-                let game = Game.deserialize(channel.game, client);
-                if (game) games[channel.id] = game;
-                try {
+            try {
+                if (channel.game) {
+                    let game = Game.deserialize(channel.game, client);
+                    if (game) games[channel.id] = game;
                     await client.createMessage(channel.id, 'A game has been restored in this channel.');
-                } catch (err) {
-                    console.error('Channel', channel.id, 'no longer exists, deleting...');
-                    delete games[channel.id];
                 }
+            } catch (err) {
+                console.error('Unable to restore game in', channel.id, ', removing...');
+                delete games[channel.id];
+                channel.game = null;
+                await channel.save();
             }
         }
         // const currentGames = require('../current-games.json');

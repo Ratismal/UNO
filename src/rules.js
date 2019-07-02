@@ -76,6 +76,7 @@ module.exports.rules = {
     },
     TRANSCRIPT: {
         desc: 'Output the game\'s transcript as a JSON file after the game. Requires OUTPUT_SCORES to be enabled.',
+        wip: true,
         value: false,
         name: 'Transcript',
         type: 'boolean'

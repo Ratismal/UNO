@@ -36,7 +36,8 @@ module.exports = class Game {
         if (!channel) return null;
         let game = new Game(client, channel);
         for (const id in obj.players) {
-            game.players[id] = Player.deserialize(obj.players[id], game);
+            if (obj.players[id])
+                game.players[id] = Player.deserialize(obj.players[id], game);
         }
         game.queue = obj.queue.map(p => game.players[p]);
         game.deck = obj.deck.map(c => Card.deserialize(c));

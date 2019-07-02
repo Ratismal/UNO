@@ -127,7 +127,12 @@ client.on('ready', async () => {
             if (channel.game) {
                 let game = Game.deserialize(channel.game, client);
                 if (game) games[channel.id] = game;
-                await client.createMessage(channel.id, 'A game has been restored in this channel.');
+                try {
+                    await client.createMessage(channel.id, 'A game has been restored in this channel.');
+                } catch (err) {
+                    console.error('Channel', channel.id, 'no longer exists, deleting...');
+                    delete games[channel.id];
+                }
             }
         }
         // const currentGames = require('../current-games.json');

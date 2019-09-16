@@ -36,7 +36,8 @@ module.exports = class Game {
         if (!channel) return null;
         let game = new Game(client, channel);
         for (const id in obj.players) {
-            game.players[id] = Player.deserialize(obj.players[id], game);
+            if (obj.players[id])
+                game.players[id] = Player.deserialize(obj.players[id], game);
         }
         game.queue = obj.queue.map(p => game.players[p]);
         game.deck = obj.deck.map(c => Card.deserialize(c));
@@ -69,8 +70,8 @@ module.exports = class Game {
             queue: this.queue.map(p => p.id),
             deck: this.deck.map(c => c.serialize()),
             discard: this.discard.map(c => c.serialize()),
-            finished: this.finished.map(p => p.id),
-            dropped: this.dropped.map(p => p.id),
+            finished: this.finished.filter(p => !!p).map(p => p.id),
+            dropped: this.dropped.filter(p => !!p).map(p => p.id),
             started: this.started,
             confirm: this.confirm,
             lastChange: Date.now(),
@@ -248,11 +249,12 @@ module.exports = class Game {
     }
 
     log(type, player, context = {}) {
-        this.transcript.push({
-            type: type.toUpperCase(),
-            player: player || 'SYSTEM',
-            ...context
-        });
+        if (this.rules.TRANSCRIPT)
+            this.transcript.push({
+                type: type.toUpperCase(),
+                player: player || 'SYSTEM',
+                ...context
+            });
     }
 
     async start() {

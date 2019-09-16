@@ -182,19 +182,20 @@ client.on('shardDisconnect', (err, id) => {
 
 const channelQueue = {};
 
-async function queueCommand(msg) {
+function queueCommand(msg) {
     if (!channelQueue[msg.channel.id]) {
-        channelQueue[msg.channel.id] = [];
+        channelQueue[msg.channel.id] = { q: [], e: false };
     }
-    if (channelQueue[msg.channel.id].length === 0) {
-        channelQueue[msg.channel.id].push(msg);
-        let m;
-        while (m = channelQueue[msg.channel.id].shift())
-            await executeCommand(m);
+    channelQueue[msg.channel.id].q.push(msg);
+}
 
-        channelQueue[msg.channel.id] = [];
-    } else {
-        channelQueue[msg.channel.id].push(msg);
+async function executeQueue(msg) {
+    if (!channelQueue[msg.channel.id].e) {
+        channelQueue[msg.channel.id].e = true;
+        let m;
+        while (m = channelQueue[msg.channel.id].q.shift())
+            await executeCommand(m);
+        channelQueue[msg.channel.id].e = false;
     }
 }
 
@@ -223,7 +224,8 @@ async function executeCommand(msg) {
 }
 
 client.on('messageCreate', async (msg) => {
-    await queueCommand(msg);
+    queueCommand(msg);
+    await executeQueue(msg);
 });
 
 async function deleteGame(id) {

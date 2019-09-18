@@ -193,8 +193,13 @@ async function executeQueue(msg) {
     if (!channelQueue[msg.channel.id].e) {
         channelQueue[msg.channel.id].e = true;
         let m;
-        while (m = channelQueue[msg.channel.id].q.shift())
-            await executeCommand(m);
+        while (m = channelQueue[msg.channel.id].q.shift()) {
+            try {
+                await executeCommand(m);
+            } catch (err) {
+                console.error(err);
+            }
+        }
         channelQueue[msg.channel.id].e = false;
     }
 }
@@ -219,6 +224,7 @@ async function executeCommand(msg) {
                 if (res)
                     await msg.channel.createMessage(res);
             }
+
         }
     }
 }

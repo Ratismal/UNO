@@ -205,12 +205,6 @@ async function executeQueue(msg) {
 }
 
 async function executeCommand(msg) {
-    if (!ready) return;
-    if (msg.author.bot) return;
-    if (queryCache[msg.channel.id] && queryCache[msg.channel.id][msg.author.id]) {
-        queryCache[msg.channel.id][msg.author.id].resolve(msg);
-        return delete queryCache[msg.channel.id][msg.author.id];
-    }
     if (msg.content.toLowerCase().startsWith(prefix)) {
         let segments = msg.content.substring(prefix.length).trim().split('&&');
         if (segments.length > 2) return await msg.channel.createMessage('Sorry, you can only execute up to **two** commands with a single message!');
@@ -230,6 +224,13 @@ async function executeCommand(msg) {
 }
 
 client.on('messageCreate', async (msg) => {
+    if (!ready) return;
+    if (msg.author.bot) return;
+    if (queryCache[msg.channel.id] && queryCache[msg.channel.id][msg.author.id]) {
+        queryCache[msg.channel.id][msg.author.id].resolve(msg);
+        return delete queryCache[msg.channel.id][msg.author.id];
+    }
+
     queueCommand(msg);
     await executeQueue(msg);
 });

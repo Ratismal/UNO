@@ -24,7 +24,7 @@ const Sequelize = require('sequelize');
 const db = require('../models');
 
 let conf = {
-    getAllUsers: false, maxShards: 8
+    getAllUsers: false, maxShards: 12
 };
 if (config.shard) {
     conf.firstShardID = config.shard;

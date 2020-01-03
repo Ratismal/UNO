@@ -173,17 +173,23 @@ module.exports = class Spawner extends EventEmitter {
       }
       case 'restart': {
         if (data.kill) {
+          await this.awaitBroadcast('restart');
           await this.killAll();
           process.exit();
         } else {
           for (const shard of this.shards.values()) {
+            await shard.awaitMessage('restart');
             await this.respawnShard(shard.id);
           }
         }
         break;
       }
       case 'respawn': {
-        await this.respawnShard(parseInt(data.shard));
+        let id = parseInt(data.shard);
+        let s = this.shards.get(id);
+        await s.awaitMessage('restart');
+
+        await this.respawnShard(id);
         break;
       }
     }

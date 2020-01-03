@@ -304,19 +304,6 @@ You can execute up to two commands in a single message by separating them with \
 
         return out;
     },
-    async restart(msg, words) {
-        if (msg.author.id === '103347843934212096') {
-            for (const id in games) {
-                let game = games[id];
-                await db.channel.upsert({
-                    id: game.channel.id,
-                    game: game.serialize()
-                });
-                await client.createMessage(id, 'The bot is being restarted, so there will be a brief downtime. Don\'t worry though, your game has been saved!');
-            }
-            process.exit();
-        }
-    },
     async join(msg, words) {
         let game = games[msg.channel.id];
         if (!game) {
@@ -722,6 +709,21 @@ process.on('message', async msg => {
         case 'await': {
             const eventKey = `await:${data.key}`;
             switch (data.message) {
+                case 'restart': {
+                    for (const id in games) {
+                        try {
+                            let game = games[id];
+                            await db.channel.upsert({
+                                id: game.channel.id,
+                                game: game.serialize()
+                            });
+                            await client.createMessage(id, 'The bot is being restarted, so there will be a brief downtime. Don\'t worry though, your game has been saved!');
+                        } catch (err) {
+
+                        }
+                    }
+                    client.sender.send(eventKey, {});
+                }
                 case 'stats': {
                     const memory = process.memoryUsage();
 

@@ -6,6 +6,7 @@ module.exports = class Shard extends Sender {
     super();
 
     this.id = id;
+    console.info('Spawning cluster', this.id);
     this.manager = manager;
     this.file = file || this.manager.file;
     this.respawn = true;

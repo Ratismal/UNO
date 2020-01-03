@@ -12,5 +12,5 @@ const loggr = new CatLoggr({
     { name: 'debug', color: CatLoggr._chalk.magenta.bgBlack, aliases: ['log', 'dir'] },
     { name: 'database', color: CatLoggr._chalk.green.bgBlack }
   ],
-  shardId: process.env.CLUSTER_ID || undefined
+  shardId: process.env.CLUSTER_ID ? process.env.CLUSTER_ID.toString().padStart(2, '0') : 'MS'
 }).setGlobal();

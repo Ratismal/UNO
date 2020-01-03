@@ -11,6 +11,7 @@ module.exports = class Spawner extends EventEmitter {
     this.max = config.shards.max;
     this.shardsPerCluster = config.shards.perCluster;
     this.clusterCount = Math.ceil(this.max / this.shardsPerCluster);
+    console.info('There will be', this.clusterCount, 'clusters.');
 
     this.file = options.file || 'src/Shard/index.js';
     this.respawn = options.respawn !== undefined ? options.respawn : true;
@@ -36,8 +37,8 @@ module.exports = class Spawner extends EventEmitter {
         }
         this.shards.set(id, shard);
       }
-      shard.once('threadReady', () => {
-        resolve(shard);
+      shard.once('ready', () => {
+        res(shard);
       });
     });
   }
@@ -125,12 +126,23 @@ module.exports = class Spawner extends EventEmitter {
       case 'await': {
         const eventKey = `await:${data.key}`;
         switch (data.message) {
+          case 'eval': {
+            let res;
+            try {
+              res = await eval(data.code)();
+            } catch (err) {
+              res = err.stack;
+            }
+            await shard.send(eventKey, { res });
+            break;
+          }
           case 'requestStats': {
             let allStats = await this.awaitBroadcast('stats');
             let stats = {
               rss: 0,
               guilds: 0,
-              games: 0
+              games: 0,
+              clusters: this.shards.size
             };
             for (const stat of allStats) {
               stats.rss += stat.message.rss;
@@ -157,6 +169,21 @@ module.exports = class Spawner extends EventEmitter {
       }
       case 'emitToWebsocket': {
         this.client.frontend.emitToWebsocket(data.code, data.data);
+        break;
+      }
+      case 'restart': {
+        if (data.kill) {
+          await this.killAll();
+          process.exit();
+        } else {
+          for (const shard of this.shards.values()) {
+            await this.respawnShard(shard.id);
+          }
+        }
+        break;
+      }
+      case 'respawn': {
+        await this.respawnShard(parseInt(data.shard));
         break;
       }
     }

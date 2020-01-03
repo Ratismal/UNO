@@ -10,7 +10,10 @@ const db = require('../../models');
 const Sender = require('./Sender');
 
 let conf = {
-    getAllUsers: false, maxShards: 12
+    getAllUsers: false,
+    maxShards: Number(process.env.SHARDS_MAX),
+    firstShardID: Number(process.env.SHARDS_FIRST),
+    lastShardID: Number(process.env.SHARDS_LAST)
 };
 if (config.shard) {
     conf.firstShardID = config.shard;
@@ -98,7 +101,7 @@ let globalGame;
 
 client.on('ready', async () => {
     console.log('ready!');
-    client.sender.send('shard', client.guilds.map(g => g.id));
+    client.sender.send('ready', client.guilds.map(g => g.id));
 
     console.info('Attemting to load in-progress games...');
     try {
@@ -588,12 +591,13 @@ You can execute up to two commands in a single message by separating them with \
     },
     async info(msg, words) { return await commands.stats(msg, words); },
     async stats(msg, words) {
-        var memory = process.memoryUsage();
-        const stats = await client.sender.awaitMessage('requestStats');
+        const { stats } = await client.sender.awaitMessage('requestStats');
         return {
             embed: {
                 fields: [
                     { name: 'RAM', value: stats.rss + 'MiB', inline: true },
+                    { name: 'Clusters', value: stats.clusters, inline: true },
+                    { name: 'Current Cluster', value: process.env.CLUSTER_ID, inline: true },
                     { name: 'Guilds', value: stats.guilds, inline: true },
                     { name: 'Games In Progress', value: stats.games, inline: true },
                     { name: 'Holiday Card Designers', inline: false, value: 'Fubar#1972' }
@@ -615,10 +619,26 @@ You can execute up to two commands in a single message by separating them with \
             return `\`\`\`js\n${err.stack}\n\`\`\``;
         }
     },
+    async meval(msg, words, text) {
+        if (msg.author.id !== '103347843934212096') return 'NOU';
+        let code = `async () => {
+    ${text}
+}`;
+        const { res } = await client.sender.awaitMessage({
+            message: 'eval',
+            code
+        });
+        return `\`\`\`js\n${res}\n\`\`\``;
+    },
     async restart(msg, words, text) {
         if (msg.author.id !== '103347843934212096') return 'NOU';
         client.sender.send('restart', { kill: words[0] === 'kill' });
         return 'Ok, bot is restarting.';
+    },
+    async respawn(msg, words, text) {
+        if (msg.author.id !== '103347843934212096') return 'NOU';
+        client.sender.send('respawn', { shard: words[0] || process.env.CLUSTER_ID });
+        return 'Ok, shard is respawning.';
     },
     async ping(msg, words) {
         return 'Pong!';
@@ -703,6 +723,8 @@ process.on('message', async msg => {
             const eventKey = `await:${data.key}`;
             switch (data.message) {
                 case 'stats': {
+                    const memory = process.memoryUsage();
+
                     client.sender.send(eventKey, JSON.stringify({
                         rss: memory.rss / 1024 / 1024,
                         guilds: client.guilds.size,
@@ -730,7 +752,7 @@ process.on('message', async msg => {
                         let player = game.players[data.userId];
                         if (player) {
                             player.sortHand();
-                            response.hand = hand;
+                            response.hand = player.hand;
                         } else {
                             response.ok = false;
                             response.error = `You aren't part of this game.`;

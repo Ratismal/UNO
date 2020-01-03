@@ -47,35 +47,45 @@ class WsMethods {
     }
 
     async method_requestGames(ctx, data) {
-        let games = Object.values(this.client.games).filter(g => {
-            return g.players[ctx.userId];
+        let rawGames = await this.client.spawner.awaitBroadcast({
+            message: 'games',
+            userId: ctx.userId
         });
+        let games = [];
+        for (const response of rawGames) {
+            for (const game of response.message) {
+                games.push(game);
+            }
+        }
         this.send(ctx, {
             code: 'games',
-            games: games.map(g => ({ channelId: g.channel.id, channelName: g.channel.name }))
-        })
+            games: games
+        });
     }
 
     async method_channel(ctx, data) {
-        let channel = data.channel;
         ctx.channelId = data.channel;
-        let game = this.client.games[channel];
-        if (game) {
-            let player = game.players[ctx.userId];
-            if (player) {
-                player.sortHand();
+        let hand = await this.client.spawner.awaitBroadcastConditional({
+            message: 'hand',
+            userId: ctx.userId,
+            channelId: data.channel
+        }, response => response && response.message && response.message.applicable);
+        if (hand) {
+            if (!hand.ok) {
+                this.send(ctx, { code: 'error', message: hand.error });
+            } else {
                 await this.send(ctx, {
                     code: 'cards',
-                    hand: player.hand,
+                    hand: hand.hand,
                     userId: ctx.userId,
                     channelId: ctx.channelId
                 });
-            } else this.send(ctx, {
-                code: 'error', message: 'You aren\'t part of this game.'
+            }
+        } else {
+            this.send(ctx, {
+                code: 'error', message: 'No game has been started.'
             });
-        } else this.send(ctx, {
-            code: 'error', message: 'No game has been started.'
-        });
+        }
     }
 }
 

@@ -249,12 +249,12 @@ module.exports = class Game {
     }
 
     log(type, player, context = {}) {
-        if (this.rules.TRANSCRIPT)
-            this.transcript.push({
-                type: type.toUpperCase(),
-                player: player || 'SYSTEM',
-                ...context
-            });
+        // if (this.rules.TRANSCRIPT)
+        //     this.transcript.push({
+        //         type: type.toUpperCase(),
+        //         player: player || 'SYSTEM',
+        //         ...context
+        //     });
     }
 
     async start() {

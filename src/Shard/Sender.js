@@ -27,7 +27,7 @@ module.exports = class Sender extends EventEmitter {
         if (!err) res();
         else {
           console.error(err);
-          if (!this.process.connected && this.process.exit) this.process.exit();
+          if (!this.process.connected && this.process.kill) this.process.kill();
           rej(err);
         }
       });

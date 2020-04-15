@@ -8,6 +8,7 @@ const loggr = new CatLoggr({
     { name: 'warn', color: CatLoggr._chalk.black.bgYellow, err: true },
     { name: 'trace', color: CatLoggr._chalk.green.bgBlack, trace: true },
     { name: 'info', color: CatLoggr._chalk.black.bgGreen },
+    { name: 'shard', color: CatLoggr._chalk.black.bgYellow },
     { name: 'verbose', color: CatLoggr._chalk.black.bgCyan },
     { name: 'debug', color: CatLoggr._chalk.magenta.bgBlack, aliases: ['log', 'dir'] },
     { name: 'database', color: CatLoggr._chalk.green.bgBlack }

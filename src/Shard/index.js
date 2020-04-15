@@ -153,17 +153,17 @@ client.on('warn', msg => {
 // });
 
 client.on('connect', id => {
-    console.log('Shard', id, 'has connected');
+    console.shard('Shard', id, 'has connected');
 });
 
 client.on('shardPreReady', id => {
-    console.log('Shard', id, 'is pre-ready');
+    console.shard('Shard', id, 'is pre-ready');
 });
 client.on('shardReady', id => {
-    console.log('Shard', id, 'is ready');
+    console.shard('Shard', id, 'is ready');
 });
 client.on('shardResume', id => {
-    console.log('Shard', id, 'resumed');
+    console.shard('Shard', id, 'resumed');
 });
 client.on('shardDisconnect', (err, id) => {
     console.warn('Shard', id, 'disconnected', err || '');

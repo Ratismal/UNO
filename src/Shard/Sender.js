@@ -1,4 +1,12 @@
 const EventEmitter = require('eventemitter3');
+const Catflake = require('catflake');
+
+const clusterId = Number(process.env.CLUSTER_ID);
+
+const catflake = new Catflake({
+  processBits: 0, workerBits: 8, incrementBits: 14, workerId: clusterId
+});
+
 
 module.exports = class Sender extends EventEmitter {
   constructor(client, proc) {
@@ -15,7 +23,7 @@ module.exports = class Sender extends EventEmitter {
     if (!(data instanceof Object)) {
       data = {
         message: data,
-        shard: parseInt(process.env.CLUSTER_ID)
+        shard: clusterId
       };
     }
     const message = {
@@ -41,7 +49,7 @@ module.exports = class Sender extends EventEmitter {
       };
     }
     return new Promise((res, rej) => {
-      data.key = Date.now().toString();
+      data.key = catflake.generate();
       let event = `await:${data.key}`;
       this.send('await', data);
       let timer = setTimeout(() => {

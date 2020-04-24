@@ -124,7 +124,7 @@ client.on('ready', async () => {
                         await client.createMessage(channel.id, 'A game has been restored in this channel.');
                     }
                 } catch (err) {
-                    console.error('Unable to restore game in', channel.id, ', removing...');
+                    console.error('Unable to restore game in', channel.id, ', removing...', err.stack);
                     delete games[channel.id];
                     channel.game = null;
                     await channel.save();
@@ -766,6 +766,7 @@ process.on('message', async msg => {
                         }
                     }
                     client.sender.send(eventKey, JSON.stringify(response));
+                    break;
                 }
             }
         }

@@ -55,6 +55,11 @@ babel-runtime@^6.23.0:
     core-js "^2.4.0"
     regenerator-runtime "^0.11.0"
 
+big-integer@^1.6.36:
+  version "1.6.48"
+  resolved "https://registry.yarnpkg.com/big-integer/-/big-integer-1.6.48.tgz#8fd88bd1632cba4a1c8c3e3d7159f08bb95b4b9e"
+  integrity sha512-j51egjPa7/i+RdiRuJbPdJ2FIUYYPhvYLjzoYbcMMm62ooO6F94fETG4MTs46zPAF9Brs04OajboA/qTGuz78w==
+
 bluebird@^3.4.1, bluebird@^3.4.6, bluebird@^3.5.0, bluebird@^3.5.1:
   version "3.5.3"
   resolved "https://registry.yarnpkg.com/bluebird/-/bluebird-3.5.3.tgz#7d01c6f9616c9a51ab0f8c549a79dfe6ec33efa7"
@@ -84,6 +89,13 @@ cat-loggr@^1.0.8:
   dependencies:
     chalk "^2.4.1"
     moment "^2.22.2"
+
+catflake@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/catflake/-/catflake-1.0.0.tgz#89b76f5053f3a1841f034bb12a8db7798e4604fa"
+  integrity sha512-ugvh/j5kKE7Nhb/hsg0VcB8nXpsF6iKGiMBjTMDg+YahCo4IG0vxSUC/dlI0V9ptKoYrRPb7HIticDhi4vWe7w==
+  dependencies:
+    big-integer "^1.6.36"
 
 chalk@^2.4.1:
   version "2.4.1"

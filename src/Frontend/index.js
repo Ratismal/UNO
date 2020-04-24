@@ -65,12 +65,13 @@ class WsMethods {
 
     async method_channel(ctx, data) {
         ctx.channelId = data.channel;
-        let hand = await this.client.spawner.awaitBroadcastConditional({
+        let res = await this.client.spawner.awaitBroadcastConditional({
             message: 'hand',
             userId: ctx.userId,
             channelId: data.channel
         }, response => response && response.message && response.message.applicable);
-        if (hand) {
+        if (res) {
+            const hand = res.message;
             if (!hand.ok) {
                 this.send(ctx, { code: 'error', message: hand.error });
             } else {

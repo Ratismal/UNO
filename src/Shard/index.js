@@ -127,9 +127,9 @@ client.on('ready', async () => {
                     }
                 } catch (err) {
                     console.error('Unable to restore game in', channel.id, ', removing...', err.stack);
-                    // delete games[channel.id];
-                    // channel.game = null;
-                    // await channel.save();
+                    delete games[channel.id];
+                    channel.game = null;
+                    await channel.save();
                 }
             }
         }

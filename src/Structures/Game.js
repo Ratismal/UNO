@@ -31,13 +31,13 @@ module.exports = class Game {
         }
     }
 
-    static deserialize(obj, client) {
+    static async deserialize(obj, client) {
         let channel = client.getChannel(obj.channel);
         if (!channel) return null;
         let game = new Game(client, channel);
         for (const id in obj.players) {
             if (obj.players[id])
-                game.players[id] = Player.deserialize(obj.players[id], game);
+                game.players[id] = await Player.deserialize(obj.players[id], game);
         }
         game.queue = obj.queue.map(p => game.players[p]);
         game.deck = obj.deck.map(c => Card.deserialize(c));

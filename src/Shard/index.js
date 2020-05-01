@@ -19,7 +19,8 @@ let conf = {
         'guildMessages',
         'guildMembers',
         'directMessages'
-    ]
+    ],
+    restMode: true
 };
 if (config.shard) {
     conf.firstShardID = config.shard;
@@ -120,15 +121,15 @@ client.on('ready', async () => {
             if (client.getChannel(channel.id)) {
                 try {
                     if (channel.game) {
-                        let game = Game.deserialize(channel.game, client);
+                        let game = await Game.deserialize(channel.game, client);
                         if (game) games[channel.id] = game;
                         await client.createMessage(channel.id, 'A game has been restored in this channel.');
                     }
                 } catch (err) {
                     console.error('Unable to restore game in', channel.id, ', removing...', err.stack);
-                    delete games[channel.id];
-                    channel.game = null;
-                    await channel.save();
+                    // delete games[channel.id];
+                    // channel.game = null;
+                    // await channel.save();
                 }
             }
         }

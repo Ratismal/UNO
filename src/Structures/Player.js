@@ -21,8 +21,11 @@ module.exports = class Player {
         // this.emit('cardsChanged', this.hand);
     }
 
-    static deserialize(obj, game) {
+    static async deserialize(obj, game) {
         let member = game.channel.guild.members.get(obj.id);
+        if (!member) {
+            member = await game.channel.guild.getRESTMember(obj.id);
+        }
         let player = new Player(member, game);
         player.called = obj.called;
         player.finished = obj.finished;

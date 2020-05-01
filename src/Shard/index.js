@@ -17,6 +17,7 @@ let conf = {
     intents: [
         'guilds',
         'guildMessages',
+        'guildMembers',
         'directMessages'
     ]
 };

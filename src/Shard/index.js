@@ -231,6 +231,16 @@ client.on('messageCreate', async (msg) => {
     await executeQueue(msg);
 });
 
+client.on('guildMemberRemove', async (guild, member) => {
+    const guildGames = Object.values(games)
+        .filter(game => game.channel.guild.id === guild.id)
+        .filter(game => game.players[member.id]);
+    
+    for (const game of guildGames) {
+        await game.channel.createMessage(await removePlayerFromGame(game, member.user));
+    }
+});
+
 async function deleteGame(id) {
     delete games[id];
     let channel = await db.channel.findByPk(id);
@@ -346,33 +356,14 @@ You can execute up to two commands in a single message by separating them with \
     async quit(msg, words) {
         let game = games[msg.channel.id];
         if (game && game.players.hasOwnProperty(msg.author.id)) {
-
             let out = 'You are no longer participating in the game.\n\n';
-            game.log('quit', msg.author.id);
+            
+            out += await removePlayerFromGame(game, msg.author);
 
-            game.dropped.push(game.players[msg.author.id]);
-            if (game.started && game.queue.length <= 2) {
-                game.queue = game.queue.filter(p => p.id !== msg.author.id);
-                game.finished.push(game.queue[0]);
-                out += game.scoreboard();
-                deleteGame(game.channel.id);
-                return out;
-            }
-            if (game.started && game.player.member.id === msg.author.id) {
-                game.next();
-                out = game.embed(`${out}A **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`);
-            }
-            delete game.players[msg.author.id];
-            game.queue = game.queue.filter(p => p.id !== msg.author.id);
-            if (!game.started, game.queue.length === 0) {
-                out = 'The game has been cancelled.';
-                deleteGame(game.channel.id);
-            }
             return out;
         } else return 'You haven\'t joined!';
     },
     async rules(msg, words) {
-
         let game = games[msg.channel.id];
         if (game) {
             if (words.length === 0) {
@@ -700,6 +691,33 @@ You can execute up to two commands in a single message by separating them with \
         }
     }
 };
+
+async function removePlayerFromGame(game, user) {
+    let out = '';
+
+    game.log('quit', user.id);
+
+    game.dropped.push(game.players[user.id]);
+    if (game.started && game.queue.length <= 2) {
+        game.queue = game.queue.filter(p => p.id !== user.id);
+        game.finished.push(game.queue[0]);
+        out += game.scoreboard();
+        deleteGame(game.channel.id);
+        return out;
+    }
+    if (game.started && game.player.member.id === user.id) {
+        game.next();
+        out = game.embed(`${out}A **${game.flipped}** was played last. \n\nIt is now ${game.player.member.user.username}'s turn!`);
+    }
+    delete game.players[user.id];
+    game.queue = game.queue.filter(p => p.id !== user.id);
+    if (!game.started, game.queue.length === 0) {
+        out = 'The game has been cancelled.';
+        deleteGame(game.channel.id);
+    }
+
+    return out;
+}
 
 
 

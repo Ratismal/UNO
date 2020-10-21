@@ -575,21 +575,21 @@ You can execute up to two commands in a single message by separating them with \
         return '<https://discordapp.com/oauth2/authorize?client_id=403419413904228352&scope=bot&permissions=0>';
     },
     async info(msg, words) { return await commands.stats(msg, words); },
-    async stats(msg, words) {
-        const { stats } = await client.sender.awaitMessage('requestStats');
-        return {
-            embed: {
-                fields: [
-                    { name: 'RAM', value: stats.rss + 'MiB', inline: true },
-                    { name: 'Clusters', value: stats.clusters, inline: true },
-                    { name: 'Current Cluster', value: process.env.CLUSTER_ID, inline: true },
-                    { name: 'Guilds', value: stats.guilds, inline: true },
-                    { name: 'Games In Progress', value: stats.games, inline: true },
-                    { name: 'Holiday Card Designers', inline: false, value: 'Fubar#1972' }
-                ]
-            }
-        };
-    },
+    // async stats(msg, words) {
+    //     const { stats } = await client.sender.awaitMessage('requestStats');
+    //     return {
+    //         embed: {
+    //             fields: [
+    //                 { name: 'RAM', value: stats.rss + 'MiB', inline: true },
+    //                 { name: 'Clusters', value: stats.clusters, inline: true },
+    //                 { name: 'Current Cluster', value: process.env.CLUSTER_ID, inline: true },
+    //                 { name: 'Guilds', value: stats.guilds, inline: true },
+    //                 { name: 'Games In Progress', value: stats.games, inline: true },
+    //                 { name: 'Holiday Card Designers', inline: false, value: 'Fubar#1972' }
+    //             ]
+    //         }
+    //     };
+    // },
     async eval(msg, words, text) {
         if (msg.author.id !== '103347843934212096') return 'NOU';
         let code = `async () => {

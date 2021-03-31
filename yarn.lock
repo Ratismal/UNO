@@ -260,10 +260,10 @@ ee-first@1.1.1:
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/ee-first/-/ee-first-1.1.1.tgz#590c61156b0ae2f4f0255732a158b266bc56b21d"
 
-eris@^0.12.0:
-  version "0.12.0"
-  resolved "https://registry.yarnpkg.com/eris/-/eris-0.12.0.tgz#4bcb0d4705fe188a59baec0baf6b31fcf5c9f809"
-  integrity sha512-LIw+uEOfHFCdE9BXL3wqxwml+74TJ7eMiMcyeW/jsmiWndDzybA/WlakiXAAnyg9a5OULOkHlKLOFsl+EgoZag==
+eris@^0.14.0:
+  version "0.14.0"
+  resolved "https://registry.yarnpkg.com/eris/-/eris-0.14.0.tgz#0d13391c0fc1a7b678b2f8d1fc3ec6aef05700d3"
+  integrity sha512-/W6X0SFR2swtA9oc4ga5Wh1TQcZtPgbUaDDdwYc67fvFUAtwC+V1xzWUZq2yDeJnTfB8Uot9SJWA8Lthe2sDtQ==
   dependencies:
     ws "^7.2.1"
   optionalDependencies:

@@ -12,4 +12,5 @@ class Client {
   }
 }
 
+/* eslint-disable-next-line */
 const client = new Client();

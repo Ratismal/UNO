@@ -22,7 +22,7 @@ module.exports = class Shard extends Sender {
       SHARDS_MAX: this.manager.max,
       SHARDS_FIRST: firstShard,
       SHARDS_LAST: lastShard,
-      SHARDS_COUNT: shardCount
+      SHARDS_COUNT: shardCount,
     };
 
     let execArgv = process.execArgv.filter(a => {
@@ -32,7 +32,7 @@ module.exports = class Shard extends Sender {
 
     this.process = childProcess.fork(this.file, process.argv, {
       env: this.env,
-      execArgv
+      execArgv,
     });
 
     this.process.on('message', msg => {
@@ -40,7 +40,7 @@ module.exports = class Shard extends Sender {
       if (message.code.startsWith('await:')) {
         this.emit(message.code, message.data);
       } else
-        this.manager.handleMessage(this, message.code, message.data);
+      {this.manager.handleMessage(this, message.code, message.data);}
     });
 
     this.process.on('error', err => {
@@ -50,7 +50,7 @@ module.exports = class Shard extends Sender {
     this.process.once('disconnect', () => {
       if (this.respawn) {
         console.warn('Shard', this.id, 'disconnected, respawning');
-        this.manager.respawnShard(this.id, true);
+        this.manager.respawnShard(this.id);
       } else {
         console.warn('Shard', this.id, 'disconnected');
       }
@@ -66,4 +66,4 @@ module.exports = class Shard extends Sender {
     this.respawn = false;
     this.process.kill(code);
   }
-}
+};

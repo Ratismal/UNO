@@ -12,7 +12,7 @@
   "dependencies": {
     "cat-loggr": "^1.0.8",
     "catflake": "^1.0.0",
-    "eris": "^0.15.1",
+    "eris": "^0.16.0",
     "eventemitter3": "^3.1.0",
     "jsonwebtoken": "^8.3.0",
     "koa": "^2.5.3",

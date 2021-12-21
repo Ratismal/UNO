@@ -33,6 +33,8 @@ UNO! - Let everyone know that you only have one card left!
 You can execute up to two commands in a single message by separating them with &&!
 ```
 
+The player will get their cards in a PM by the bot itself but to the command needs to be executed in the room where the players are playing (not privately).
+
 ## Configurable Rules
 
 One of the features of UNO is configurable rules, to make sure your games are as customizable as possible! You can view these using the `uno rules` command.

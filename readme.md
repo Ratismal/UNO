@@ -161,7 +161,7 @@ config/config.json (support various database with this example will use SQLite):
 
 ### Dependencies
 
-After running `npm install` it is required to migrate the new database (after put the configuration files) and run `npx sequelize-cli db:migrate`.  
+After running `npm install` it is required to migrate the new database (after put the configuration files) and run `npm run sequelize db:migrate`.
 Now you can run the bot with `nodejs index.js`.
 
 ## Disclaimer

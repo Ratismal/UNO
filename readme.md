@@ -117,47 +117,9 @@ You may selfhost (AKA run your own instance of) this bot under the following cir
 
 ### Configuration
 
-config.json, the oauth part is not mandatory (it is used for the web interface) but if you don't needed you need to leave the settings with default values:
-```
-{
-  "token": "bot token",
-  "oauth": {
-    "id": "client id",
-    "redirect": "http://localhost:8108/callback",
-    "secret": "client secret",
-    "authSecret": "someamazingsecret"
-  },
-  "shard": 0,
-  "prefix": "uno",
-  "shards": {
-    "max": 1,
-    "perCluster": 1
-  }
-}
-```
+config.json (`config.example.json`), the oauth part is not mandatory (it is used for the web interface) but if you don't needed you need to leave the settings with default values.
 
-config/config.json (support various database with this example will use SQLite):
-
-```
-{
-  "production": {
-    "username": null,
-    "password": null,
-    "database": "sqlite::memory:",
-    "host": null,
-    "dialect": "sqlite",
-    "storage": "database.sqlite"
-  },
-  "development": {
-    "username": null,
-    "password": null,
-    "database": "sqlite::memory:",
-    "host": null,
-    "dialect": "sqlite",
-    "storage": "database.sqlite"
-  }
-}
-```
+config/config.json (`config/config.example.json`), support various database with this example will use SQLite.
 
 ### Dependencies
 

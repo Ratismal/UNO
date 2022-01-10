@@ -1,0 +1,18 @@
+{
+  "production": {
+    "username": null,
+    "password": null,
+    "database": "sqlite::memory:",
+    "host": null,
+    "dialect": "sqlite",
+    "storage": "database.sqlite"
+  },
+  "development": {
+    "username": null,
+    "password": null,
+    "database": "sqlite::memory:",
+    "host": null,
+    "dialect": "sqlite",
+    "storage": "database.sqlite"
+  }
+}

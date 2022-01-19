@@ -208,7 +208,7 @@ async function executeCommand(msg) {
             segments[1] = segments[1].trim().substring(prefix.length);
         for (const text of segments) {
             let words = text.trim().split(/\s+/);
-            let name = words.shift().toLowerCase();
+            let name = words.shift().toLowerCase().replace(/\!+/, '!');
             if (commands.hasOwnProperty(name)) {
                 let res = await commands[name](msg, words, text.trim().substring(name.length));
                 if (res)
@@ -216,6 +216,12 @@ async function executeCommand(msg) {
             }
 
         }
+    }
+
+    if (msg.content.match(/^(.+&&\s*)?u+n+o+\!+$/i)) {
+        let res = await commands['!'](msg);
+        if (res)
+            await msg.channel.createMessage(res);
     }
 }
 
@@ -319,7 +325,7 @@ const commands = {
 
 You can execute up to two commands in a single message by separating them with \`&&\`!
 
-Privacy Policy: https://github.com/Ratismal/UNO/blob/master/privacy.md`;
+Privacy Policy: <https://github.com/Ratismal/UNO/blob/master/privacy.md>`;
 
         return out;
     },

@@ -9,8 +9,6 @@ const db = require('../../models');
 const Sender = require('./Sender');
 const GameManager = require('./GameManager');
 
-const { SlashCreator, GatewayServer, } = require('slash-create');
-
 let conf = {
   getAllUsers: false,
   maxShards: Number(process.env.SHARDS_MAX),
@@ -46,28 +44,6 @@ class Client extends Eris.Client {
     this.interactions = {};
 
     this.gameManager = new GameManager(this);
-
-    this.creator = new SlashCreator({
-      applicationID: config.oauth.id,
-      publicKey: config.oauth.publicKey,
-      token: config.token,
-    });
-
-    this.creator.botClient = this;
-
-    this.on('rawWS', (packet) => {
-      console.log(packet);
-      if (packet.t === 'INTERACTION_CREATE') {
-        console.log(packet);
-        this.emit('interactionCreate', packet.d);
-      }
-    });
-
-    this.creator
-      .withServer(new GatewayServer(handler => {
-        this.on('interactionCreate', handler);
-      }))
-      .registerCommandsIn(path.join(__dirname, 'interactions'));
 
     this.commands = {};
     this.commandMap = {};
@@ -141,14 +117,6 @@ class Client extends Eris.Client {
       this.createMessage(channelId, message);
     });
   }
-
-  getGlobalCommands() {
-    return this.requestHandler.request('GET', `/applications/${this.application.id}/commands`);
-  }
-
-  createGlobalCommand(options) {
-    return this.requestHandler.request('POST', `/applications/${this.application.id}/commands`, options);
-  }
 }
 
 const client = new Client(config.token, conf);
@@ -160,10 +128,8 @@ process.on('unhandledRejection', error => {
 });
 
 client.on('ready', async() => {
-
-
   console.log('ready!');
-  client.sender.send('ready', client.guilds.map(g => g.id));
+  client.sender.send('ready', null);
 
   console.info('Attemting to load in-progress games...');
   try {
@@ -172,23 +138,35 @@ client.on('ready', async() => {
         game: { [Sequelize.Op.ne]: null, },
       },
     });
+    let restores = 0;
+    let failures = 0;
     for (const channel of channels) {
-      if (client.getChannel(channel.id)) {
+      if (!channel.game) {
+        continue;
+      }
+
+      const id = channel.game.channel;
+
+      if (client.getChannel(id)) {
         try {
           if (channel.game) {
             let game = await Game.deserialize(channel.game, client);
-            if (game) {client.games[channel.id] = game;}
-            await client.createMessage(channel.id, 'A game has been restored in this channel.');
+            if (game) {
+              client.games[id] = game;
+            }
+            await client.createMessage(id, 'A game has been restored in this channel.');
+            restores++;
           }
         } catch (err) {
-          console.error('Unable to restore game in', channel.id, ', removing...', err.stack);
-          delete client.games[channel.id];
+          console.error('Unable to restore game in', id, ', removing...', err.stack);
+          delete client.games[id];
           channel.game = null;
           await channel.save();
+          failures++;
         }
       }
     }
-    console.info('Restored', channels.length, 'games.');
+    console.info('Restored', restores, 'games,', failures, 'failed to restore.');
   } catch (err) {
     console.error('Issue restoring old games:', err);
   }
@@ -212,6 +190,7 @@ client.on('shardPreReady', id => {
 });
 client.on('shardReady', id => {
   console.shard('Shard', id, 'is ready');
+  client.sender.send('shardReady', id);
 });
 client.on('shardResume', id => {
   console.shard('Shard', id, 'resumed');
@@ -250,17 +229,25 @@ async function executeCommand(msg) {
     if (segments.length > 2) {
       return await msg.channel.createMessage('Sorry, you can only execute up to **two** commands with a single message!');
     }
-    if (segments[1] && segments[1].trim().toLowerCase().startsWith(prefix))
-    {segments[1] = segments[1].trim().substring(prefix.length);}
+    if (segments[1] && segments[1].trim().toLowerCase().startsWith(prefix)) {
+      segments[1] = segments[1].trim().substring(prefix.length);
+    }
     for (const text of segments) {
       let words = text.trim().split(/\s+/);
-      let name = words.shift().toLowerCase();
+      let name = words.shift().toLowerCase().replace(/\!+/, '!');
       if (client.getCommand(name)) {
         let res = await client.getCommand(name).execute(msg, words, text.trim().substring(name.length));
-        if (res)
-        {await msg.channel.createMessage(res);}
+        if (res) {
+          return await msg.channel.createMessage(res);
+        }
       }
+    }
+  }
 
+  if (msg.content.match(/^(.+&&\s*)?u+n+o+\!+$/i)) {
+    let res = await client.getCommand('uno').execute(msg);
+    if (res) {
+      await msg.channel.createMessage(res);
     }
   }
 }
@@ -275,6 +262,24 @@ client.on('messageCreate', async(msg) => {
 
   queueCommand(msg);
   await executeQueue(msg);
+});
+
+client.on('interactionCreate', async(interaction) => {
+  const command = client.getCommand(interaction.data.custom_id);
+  if (command && command.interact) {
+    const res = await command.interact(interaction);
+    if (res) {
+      let body = {
+        flags: 64,
+      };
+      if (typeof res === 'object') {
+        body = { ...body, ...res, };
+      } else {
+        body.content = res;
+      }
+      await interaction.createMessage(body);
+    }
+  }
 });
 
 client.on('guildMemberRemove', async(guild, member) => {

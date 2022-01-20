@@ -16,7 +16,7 @@ module.exports = class Sender extends EventEmitter {
   }
 
   send(code, data) {
-    if (!data) {
+    if (data === undefined) {
       data = code;
       code = 'generic';
     }

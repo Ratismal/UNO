@@ -22,7 +22,9 @@ module.exports = class HelpCommand extends BaseCommand {
 **${prefix.toUpperCase()} RULES** - Checks or sets the game rules!
 **${prefix.toUpperCase()}!** - Let everyone know that you only have one card left!
 
-You can execute up to two commands in a single message by separating them with \`&&\`!`;
+You can execute up to two commands in a single message by separating them with \`&&\`!
+
+Privacy Policy: <https://github.com/Ratismal/UNO/blob/master/privacy.md>`;
 
     return out;
   }

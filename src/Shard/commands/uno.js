@@ -3,7 +3,7 @@ const BaseCommand = require('../BaseCommand');
 module.exports = class PingCommand extends BaseCommand {
   constructor(client) {
     super(client, 'uno', {
-      aliases: ['!'],
+      aliases: ['!', 'uno!'],
     });
   }
 
@@ -15,7 +15,9 @@ module.exports = class PingCommand extends BaseCommand {
       if (!p.called) {
         p.called = true;
         return `**UNO!!** ${p.member.user.username} only has one card left!`;
-      } else {return 'You\'ve already said UNO!';}
+      } else {
+        return 'You\'ve already said UNO!';
+      }
     }
   }
 };

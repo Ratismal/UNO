@@ -200,6 +200,19 @@ module.exports = class Game {
         },
         timestamp: moment(this.timeStarted),
       },
+      components: [
+        {
+          type: 1,
+          components: [
+            {
+              type: 2,
+              custom_id: 'hand',
+              style: 1,
+              label: 'Hand',
+            }
+          ],
+        }
+      ],
     };
   }
 

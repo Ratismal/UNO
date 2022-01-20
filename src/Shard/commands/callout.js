@@ -27,9 +27,9 @@ module.exports = class CalloutCommand extends BaseCommand {
         }, you didn't say UNO! Pick up ${Math.max(1, game.rules.CALLOUT_PENALTY)}!`;
       }
       else {
-        if (game.rules.FALSE_CALLOUT_PENALTY <= 0)
-        {return 'There is nobody to call out.';}
-        else {
+        if (game.rules.FALSE_CALLOUT_PENALTY <= 0) {
+          return 'There is nobody to call out.';
+        } else {
           await game.deal(game.players[msg.author.id], game.rules.FALSE_CALLOUT_PENALTY);
           return `There is nobody to call out. Pick up ${game.rules.FALSE_CALLOUT_PENALTY}!`;
         }

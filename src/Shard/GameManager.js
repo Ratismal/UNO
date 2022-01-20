@@ -63,9 +63,11 @@ module.exports = class GameManager {
   async deleteGame(id) {
     delete this.games[id];
     let channel = await this.client.db.channel.findByPk(id);
-    await channel.update({
-      game: null,
-    });
+    if (channel) {
+      await channel.update({
+        game: null,
+      });
+    }
   };
 
   async removePlayerFromGame(game, user) {

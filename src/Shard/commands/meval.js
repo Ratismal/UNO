@@ -14,13 +14,12 @@ module.exports = class MEvalCommand extends BaseCommand {
     if (text.indexOf('\n') === -1 && !text.startsWith('return')) {
       code = `async () => ${text}`;
     }
-    let func = eval(code);
-    func = func.bind(this);
-    try {
-      let res = await func();
-      return `\`\`\`js\n${res}\n\`\`\``;
-    } catch (err) {
-      return `\`\`\`js\n${err.stack}\n\`\`\``;
-    }
+
+    const { res, } = await this.client.sender.awaitMessage({
+      message: 'eval',
+      code,
+    });
+
+    return `\`\`\`js\n${res}\n\`\`\``;
   }
 };

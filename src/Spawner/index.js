@@ -15,7 +15,6 @@ module.exports = class Spawner extends EventEmitter {
     this.file = options.file || 'src/Shard/index.js';
     this.respawn = options.respawn !== undefined ? options.respawn : true;
     this.shards = new Map();
-    this.guildShardMap = {};
 
     this.shardsSpawned = null;
 
@@ -35,10 +34,13 @@ module.exports = class Spawner extends EventEmitter {
           this.shards.delete(id);
         }
         this.shards.set(id, shard);
-      }
-      shard.once('ready', () => {
+
+        shard.once('ready', () => {
+          res(shard);
+        });
+      } else {
         res(shard);
-      });
+      }
     });
   }
 
@@ -58,17 +60,21 @@ module.exports = class Spawner extends EventEmitter {
   }
 
   respawnShard(id) {
+    console.info(`Respawning cluster ${id}...`);
+
     return new Promise(async(res) => {
       let shard = await this.spawn(id, false);
 
       shard.on('shardReady', async(data) => {
         if (this.shards.get(id) !== undefined) {
           let oldShard = this.shards.get(id);
-          oldShard.send('killShard', { id: data, });
+          if (shard !== oldShard) {
+            oldShard.send('killShard', { id: data, });
+          }
         }
       });
 
-      shard.on('ready', async() => {
+      shard.once('ready', async() => {
         if (this.shards.get(id)) {
           let oldShard = this.shards.get(id);
           oldShard.kill();
@@ -129,7 +135,7 @@ module.exports = class Spawner extends EventEmitter {
       case 'eval': {
         let res;
         try {
-          res = await eval(data.code)();
+          res = JSON.stringify(await eval(data.code)());
         } catch (err) {
           res = err.stack;
         }
@@ -156,15 +162,11 @@ module.exports = class Spawner extends EventEmitter {
       break;
     }
     case 'ready': {
-      for (const guild in this.guildShardMap)
-      {if (this.guildShardMap[guild] === shard.id) {delete this.guildShardMap[guild];}}
-      for (const guild of data)
-      {this.guildShardMap[guild] = shard.id;}
       shard.emit('ready');
       break;
     }
     case 'shardReady': {
-      shard.emit('shardReady', shard.id);
+      shard.emit('shardReady', data.message);
       break;
     }
     case 'emitToWebsocket': {
@@ -177,7 +179,8 @@ module.exports = class Spawner extends EventEmitter {
         await this.killAll();
         process.exit();
       } else {
-        for (const shard of this.shards.values()) {
+        const shards = [...this.shards.values()];
+        for (const shard of shards) {
           await shard.awaitMessage('restart');
           await this.respawnShard(shard.id);
         }

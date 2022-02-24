@@ -238,7 +238,7 @@ async function executeCommand(msg) {
       if (client.getCommand(name)) {
         let res = await client.getCommand(name).execute(msg, words, text.trim().substring(name.length));
         if (res) {
-          return await msg.channel.createMessage(res);
+          await msg.channel.createMessage(res);
         }
       }
     }

@@ -63,6 +63,12 @@ module.exports = class Spawner extends EventEmitter {
     console.info(`Respawning cluster ${id}...`);
 
     return new Promise(async(res) => {
+      if (this.shards.get(id)) {
+        let oldShard = this.shards.get(id);
+        oldShard.kill();
+        this.shards.delete(id);
+      }
+
       let shard = await this.spawn(id, false);
 
       shard.on('shardReady', async(data) => {
@@ -75,11 +81,6 @@ module.exports = class Spawner extends EventEmitter {
       });
 
       shard.once('ready', async() => {
-        if (this.shards.get(id)) {
-          let oldShard = this.shards.get(id);
-          oldShard.kill();
-          this.shards.delete(id);
-        }
         this.shards.set(id, shard);
         res();
         console.info(`Cluster ${id} has been respawned.`);

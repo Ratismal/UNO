@@ -38,7 +38,7 @@ module.exports = class PlayCommand extends BaseCommand {
           if (2 === game.queue.length) {
             game.finished.push(game.queue[1]);
             pref = game.scoreboard();
-            this.client.gameHandler.deleteGame(game.channel.id);
+            this.client.gameManager.deleteGame(game.channel.id);
             return pref;
           }
         }

@@ -26,7 +26,7 @@ module.exports = class DrawCommand extends BaseCommand {
       let [card] = await game.deal(game.player, 1);
       if (game.rules.DRAW_AUTOPLAY === true
         && (!game.flipped.color || card.wild || card.id === game.flipped.id || card.color === game.flipped.color)) {
-        return await this.client.getCommand('play').execute(msg, card.toString().split(' '), true);
+        return await this.client.getCommand('play').execute(msg, card.toString().split(' '), '', true);
       }
       let player = game.player;
       await game.next();

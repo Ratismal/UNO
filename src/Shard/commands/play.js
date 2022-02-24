@@ -7,7 +7,7 @@ module.exports = class PlayCommand extends BaseCommand {
     });
   }
 
-  async execute(msg, words, drawn = false) {
+  async execute(msg, words, text, drawn = false) {
     let game = this.games[msg.channel.id];
     if (game) {
       if (!game.started) {return "Sorry, but the game hasn't been started yet!";}

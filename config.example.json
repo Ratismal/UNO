@@ -1,0 +1,15 @@
+{
+  "token": "bot token",
+  "oauth": {
+    "id": "client id",
+    "redirect": "http://localhost:8108/callback",
+    "secret": "client secret",
+    "authSecret": "someamazingsecret"
+  },
+  "shard": 0,
+  "prefix": "uno",
+  "shards": {
+    "max": 1,
+    "perCluster": 1
+  }
+}

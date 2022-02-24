@@ -1,6 +1,5 @@
 const Shard = require('./Shard');
 const EventEmitter = require('eventemitter3');
-const moment = require('moment');
 const config = require('../../config.json');
 
 module.exports = class Spawner extends EventEmitter {
@@ -16,11 +15,10 @@ module.exports = class Spawner extends EventEmitter {
     this.file = options.file || 'src/Shard/index.js';
     this.respawn = options.respawn !== undefined ? options.respawn : true;
     this.shards = new Map();
-    this.guildShardMap = {};
 
     this.shardsSpawned = null;
 
-    process.on('exit', code => {
+    process.on('exit', () => {
       this.killAll();
     });
 
@@ -36,10 +34,13 @@ module.exports = class Spawner extends EventEmitter {
           this.shards.delete(id);
         }
         this.shards.set(id, shard);
-      }
-      shard.once('ready', () => {
+
+        shard.once('ready', () => {
+          res(shard);
+        });
+      } else {
         res(shard);
-      });
+      }
     });
   }
 
@@ -58,23 +59,28 @@ module.exports = class Spawner extends EventEmitter {
       .map(s => this.respawnShard(s.id)));
   }
 
-  respawnShard(id, dirty = false) {
-    return new Promise(async (res, rej) => {
+  respawnShard(id) {
+    console.info(`Respawning cluster ${id}...`);
+
+    return new Promise(async(res) => {
+      if (this.shards.get(id)) {
+        let oldShard = this.shards.get(id);
+        oldShard.kill();
+        this.shards.delete(id);
+      }
+
       let shard = await this.spawn(id, false);
 
-      shard.on('shardReady', async (data) => {
+      shard.on('shardReady', async(data) => {
         if (this.shards.get(id) !== undefined) {
           let oldShard = this.shards.get(id);
-          oldShard.send('killShard', { id: data });
+          if (shard !== oldShard) {
+            oldShard.send('killShard', { id: data, });
+          }
         }
       });
 
-      shard.on('ready', async () => {
-        if (this.shards.get(id)) {
-          let oldShard = this.shards.get(id);
-          oldShard.kill();
-          this.shards.delete(id);
-        }
+      shard.once('ready', async() => {
         this.shards.set(id, shard);
         res();
         console.info(`Cluster ${id} has been respawned.`);
@@ -83,7 +89,7 @@ module.exports = class Spawner extends EventEmitter {
   }
 
   async broadcast(code, data) {
-    for (cosnt[_, shard] of this.shards) {
+    for (const [, shard] of this.shards) {
       if (shard.file === this.file) {
         try {
           await shard.send(code, data);
@@ -96,7 +102,7 @@ module.exports = class Spawner extends EventEmitter {
 
   async awaitBroadcast(data) {
     let results = [];
-    for (const [_, shard] of this.shards) {
+    for (const [, shard] of this.shards) {
       if (shard.file === this.file) {
         try {
           results.push(await shard.awaitMessage(data));
@@ -109,12 +115,13 @@ module.exports = class Spawner extends EventEmitter {
   }
 
   async awaitBroadcastConditional(data, condition) {
-    for (const [_, shard] of this.shards) {
+    for (const [, shard] of this.shards) {
       if (shard.file === this.file) {
         try {
           let result = await shard.awaitMessage(data);
-          if (condition(result)) return result;
+          if (condition(result)) {return result;}
         } catch (err) {
+          // NO-OP
         }
       }
     }
@@ -123,86 +130,83 @@ module.exports = class Spawner extends EventEmitter {
 
   async handleMessage(shard, code, data) {
     switch (code) {
-      case 'await': {
-        const eventKey = `await:${data.key}`;
-        switch (data.message) {
-          case 'eval': {
-            let res;
-            try {
-              res = await eval(data.code)();
-            } catch (err) {
-              res = err.stack;
-            }
-            await shard.send(eventKey, { res });
-            break;
-          }
-          case 'requestStats': {
-            let allStats = await this.awaitBroadcast('stats');
-            let stats = {
-              rss: 0,
-              guilds: 0,
-              games: 0,
-              clusters: this.shards.size
-            };
-            for (const stat of allStats) {
-              stats.rss += stat.message.rss;
-              stats.guilds += stat.message.guilds;
-              stats.games += stat.message.games;
-            }
-            await shard.send(eventKey, { stats });
-            break;
-          }
+    case 'await': {
+      const eventKey = `await:${data.key}`;
+      switch (data.message) {
+      case 'eval': {
+        let res;
+        try {
+          res = JSON.stringify(await eval(data.code)());
+        } catch (err) {
+          res = err.stack;
         }
+        await shard.send(eventKey, { res, });
         break;
       }
-      case 'ready': {
-        for (const guild in this.guildShardMap)
-          if (this.guildShardMap[guild] === shard.id) delete this.guildShardMap[guild];
-        for (const guild of data)
-          this.guildShardMap[guild] = shard.id;
-        shard.emit('ready');
-        break;
-      }
-      case 'shardReady': {
-        shard.emit('shardReady', shard.id);
-        break;
-      }
-      case 'emitToWebsocket': {
-        this.client.frontend.emitToWebsocket(data.code, data.data);
-        break;
-      }
-      case 'restart': {
-        if (data.kill) {
-          await this.awaitBroadcast('restart');
-          await this.killAll();
-          process.exit();
-        } else {
-          for (const shard of this.shards.values()) {
-            await shard.awaitMessage('restart');
-            await this.respawnShard(shard.id);
-          }
+      case 'requestStats': {
+        let allStats = await this.awaitBroadcast('stats');
+        let stats = {
+          rss: 0,
+          guilds: 0,
+          games: 0,
+          clusters: this.shards.size,
+        };
+        for (const stat of allStats) {
+          stats.rss += stat.message.rss;
+          stats.guilds += stat.message.guilds;
+          stats.games += stat.message.games;
         }
+        await shard.send(eventKey, { stats, });
         break;
       }
-      case 'respawn': {
-        let id = parseInt(data.shard);
-        let s = this.shards.get(id);
-        await s.awaitMessage('restart');
+      }
+      break;
+    }
+    case 'ready': {
+      shard.emit('ready');
+      break;
+    }
+    case 'shardReady': {
+      shard.emit('shardReady', data.message);
+      break;
+    }
+    case 'emitToWebsocket': {
+      this.client.frontend.emitToWebsocket(data.code, data.data);
+      break;
+    }
+    case 'restart': {
+      if (data.kill) {
+        await this.awaitBroadcast('restart');
+        await this.killAll();
+        process.exit();
+      } else {
+        const shards = [...this.shards.values()];
+        for (const shard of shards) {
+          await shard.awaitMessage('restart');
+          await this.respawnShard(shard.id);
+        }
+      }
+      break;
+    }
+    case 'respawn': {
+      let id = parseInt(data.shard);
+      let s = this.shards.get(id);
+      await s.awaitMessage('restart');
 
-        await this.respawnShard(id);
-        break;
-      }
+      await this.respawnShard(id);
+      break;
+    }
     }
   }
 
-  handleDeath(shard, code) {
+  handleDeath(_shard, _code) {
     // if (shard.respawn) this.respawnShard(shard.id);
   }
 
-  killAll(code) {
+  killAll(_code) {
     this.respawn = false;
 
     this.shards.forEach(s => s.kill());
     console.info('All shards have been killed.');
   }
-}
+};

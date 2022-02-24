@@ -308,6 +308,7 @@ process.on('message', async msg => {
     const eventKey = `await:${data.key}`;
     switch (data.message) {
     case 'restart': {
+      ready = false;
       for (const id of Object.keys(client.games)) {
         try {
           let game = client.games[id];

@@ -234,7 +234,7 @@ async function executeCommand(msg) {
     }
     for (const text of segments) {
       let words = text.trim().split(/\s+/);
-      let name = words.shift().toLowerCase().replace(/\!+/, '!');
+      let name = words.shift().toLowerCase().replace(/\W/, '');
       if (client.getCommand(name)) {
         let res = await client.getCommand(name).execute(msg, words, text.trim().substring(name.length));
         if (res) {
@@ -244,7 +244,7 @@ async function executeCommand(msg) {
     }
   }
 
-  if (msg.content.match(/^(.+&&\s*)?u+n+o+\!+$/i)) {
+  if (msg.content.match(/u+n+o+\!+$/i)) {
     let res = await client.getCommand('uno').execute(msg);
     if (res) {
       await msg.channel.createMessage(res);
@@ -265,6 +265,8 @@ client.on('messageCreate', async(msg) => {
 });
 
 client.on('interactionCreate', async(interaction) => {
+  if (!ready) {return;}
+
   const command = client.getCommand(interaction.data.custom_id);
   if (command && command.interact) {
     const res = await command.interact(interaction);

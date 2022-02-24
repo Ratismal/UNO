@@ -13,6 +13,9 @@ module.exports = class HandCommand extends BaseCommand {
       }
 
       let player = game.players[msg.author.id];
+      if (!player) {
+        return 'Sorry, but you are not a part of this game!';
+      }
       await player.sendHand();
       return 'You got it! I\'ve DMed you your hand.';
     } else {
@@ -28,6 +31,10 @@ module.exports = class HandCommand extends BaseCommand {
       }
 
       let player = game.players[interaction.member.id];
+      if (!player) {
+        return 'Sorry, but you are not a part of this game!';
+      }
+
       const hand = player.getHand();
       return hand;
     } else {

@@ -234,7 +234,7 @@ async function executeCommand(msg) {
     }
     for (const text of segments) {
       let words = text.trim().split(/\s+/);
-      let name = words.shift().toLowerCase().replace(/\W/, '');
+      let name = words.shift().toLowerCase().replace(/\!+/, '!');
       if (client.getCommand(name)) {
         let res = await client.getCommand(name).execute(msg, words, text.trim().substring(name.length));
         if (res) {

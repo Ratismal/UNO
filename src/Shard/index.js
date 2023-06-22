@@ -11,9 +11,11 @@ const GameManager = require('./GameManager');
 
 let conf = {
   getAllUsers: false,
-  maxShards: Number(process.env.SHARDS_MAX),
-  firstShardID: Number(process.env.SHARDS_FIRST),
-  lastShardID: Number(process.env.SHARDS_LAST),
+  gateway: {
+    maxShards: Number(process.env.SHARDS_MAX),
+    firstShardID: Number(process.env.SHARDS_FIRST),
+    lastShardID: Number(process.env.SHARDS_LAST),
+  },
   intents: [
     'guilds',
     'guildMessages',

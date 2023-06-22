@@ -1,7 +1,7 @@
 require('../logger');
 const config = require('../../config.json');
 
-const Eris = require('eris');
+const Dysnomia = require('@projectdysnomia/dysnomia');
 const fs = require('fs'), path = require('path');
 const { Game, } = require('../Structures');
 const Sequelize = require('sequelize');
@@ -33,7 +33,7 @@ const { rules, ruleKeys, } = require('../rules');
 
 let ready = false;
 
-class Client extends Eris.Client {
+class Client extends Dysnomia.Client {
   constructor(...args) {
     super(...args);
 

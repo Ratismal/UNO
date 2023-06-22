@@ -10,9 +10,9 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@projectdysnomia/dysnomia": "^0.1.2",
     "cat-loggr": "^1.2.2",
     "catflake": "^1.0.0",
-    "eris": "^0.17.2",
     "eventemitter3": "^3.1.0",
     "jsonwebtoken": "^8.3.0",
     "koa": "^2.5.3",

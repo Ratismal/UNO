@@ -10,18 +10,20 @@ const Sender = require('./Sender');
 const GameManager = require('./GameManager');
 
 let conf = {
-  getAllUsers: false,
   gateway: {
+    getAllUsers: false,
     maxShards: Number(process.env.SHARDS_MAX),
     firstShardID: Number(process.env.SHARDS_FIRST),
     lastShardID: Number(process.env.SHARDS_LAST),
+    intents: [
+      'guilds',
+      'guildMessages',
+      'guildMembers',
+      'directMessages',
+      'messageContent'
+    ],
   },
-  intents: [
-    'guilds',
-    'guildMessages',
-    'guildMembers',
-    'directMessages'
-  ],
+
   restMode: true,
 };
 if (config.shard) {

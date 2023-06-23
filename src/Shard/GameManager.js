@@ -39,16 +39,16 @@ module.exports = class GameManager {
             out[0] = `**${user.username}#${user.discriminator}** has been kicked from the game due to inactivity.`;
             out = out.join('\n');
           } else {
-            let desc = out.embed.description;
+            let desc = out.embeds[0].description;
             desc = desc.split('\n');
             desc[0] = `**${user.username}#${user.discriminator}** has been kicked from the game due to inactivity.`;
             desc = desc.join('\n');
-            out.embed.description = desc;
+            out.embeds[0].description = desc;
           }
           if (game.queue.length === 0) {
             if (typeof out === 'string')
             {out += '\nThe game has been cancelled due to no remaining players.';}
-            else {out.embed.description += '\nThe game has been cancelled due to no remaining players.';}
+            else {out.embeds[0].description += '\nThe game has been cancelled due to no remaining players.';}
             this.deleteGame(id);
           }
           await game.send(out);

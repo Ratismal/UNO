@@ -189,7 +189,7 @@ module.exports = class Game {
 
   embed(desc) {
     return {
-      embed: {
+      embeds: [{
         description: desc,
         thumbnail: { url: this.flipped.URL, },
         color: this.flipped.colorCode,
@@ -199,7 +199,7 @@ module.exports = class Game {
           icon_url: 'https://raw.githubusercontent.com/Ratismal/UNO/master/cards/logo.png',
         },
         timestamp: moment(this.timeStarted),
-      },
+      }],
       components: [
         {
           type: 1,

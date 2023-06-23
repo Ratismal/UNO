@@ -10,7 +10,7 @@ module.exports = class RestartCommand extends BaseCommand {
   async execute() {
     const { stats, } = await this.client.sender.awaitMessage('requestStats');
     return {
-      embed: {
+      embeds: [{
         fields: [
           { name: 'RAM', value: stats.rss + 'MiB', inline: true, },
           { name: 'Clusters', value: stats.clusters, inline: true, },
@@ -19,7 +19,7 @@ module.exports = class RestartCommand extends BaseCommand {
           { name: 'Games In Progress', value: stats.games, inline: true, },
           { name: 'Holiday Card Designers', inline: false, value: 'Fubar#1972', }
         ],
-      },
+      }],
     };
   }
 };
